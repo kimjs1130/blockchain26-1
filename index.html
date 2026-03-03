@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>Live Crypto Prices</title>
   <style>
     body {
@@ -16,6 +15,11 @@
     .price {
       font-size: 28px;
       margin: 20px 0;
+    }
+    #updated {
+      margin-top: 40px;
+      font-size: 16px;
+      color: gray;
     }
   </style>
 </head>
@@ -31,18 +35,23 @@
     Ethereum (USD): <span id="eth">Loading...</span>
   </div>
 
+  <div id="updated">Last updated: -</div>
+
   <script>
     async function fetchPrices() {
       try {
         const url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd";
         const res = await fetch(url);
-
         if (!res.ok) throw new Error("HTTP " + res.status);
 
         const data = await res.json();
 
         document.getElementById("btc").textContent = data.bitcoin.usd;
         document.getElementById("eth").textContent = data.ethereum.usd;
+
+        const now = new Date();
+        document.getElementById("updated").textContent =
+          "Last updated: " + now.toLocaleString();
 
       } catch (err) {
         console.error(err);
