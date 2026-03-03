@@ -49,7 +49,7 @@
   <script>
     async function fetchPrices() {
       try {
-        const url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd";
+        const url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&x_cg_demo_api_key=demo";
         const res = await fetch(url);
         if (!res.ok) throw new Error("Network response was not ok: " + res.status);
         const data = await res.json();
