@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crypto Price Report</title>
+</head>
+<body>
+  <h1>Crypto Price Report</h1>
+
+  <h2>What I did</h2>
+  <ol>
+    <li>Created GitHub account</li>
+    <li>Created GitHub Pages homepage</li>
+    <li>Fetched BTC/ETH prices from CoinGecko and populated the table</li>
+    <li>Asked an LLM to convert the Markdown document into HTML</li>
+  </ol>
+
+  <h2>CoinGecko API</h2>
+  <p>
+    API used:
+    <a href="https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd" target="_blank" rel="noopener noreferrer">
+      https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd
+    </a>
+  </p>
+
+  <h2>Today's Prices</h2>
+  <table border="1" cellpadding="8" cellspacing="0">
+    <thead>
+      <tr>
+        <th>Coin</th>
+        <th>Price (USD)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Bitcoin</td>
+        <td id="btc">Loading...</td>
+      </tr>
+      <tr>
+        <td>Ethereum</td>
+        <td id="eth">Loading...</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="updated" style="margin-top:12px;">Last updated: -</p>
+
+  <script>
+    async function fetchPrices() {
+      try {
+        const url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd";
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Network response was not ok: " + res.status);
+        const data = await res.json();
+
+        document.getElementById("btc").textContent = data.bitcoin.usd;
+        document.getElementById("eth").textContent = data.ethereum.usd;
+
+        const now = new Date();
+        document.getElementById("updated").textContent = "Last updated: " + now.toLocaleString();
+      } catch (err) {
+        document.getElementById("btc").textContent = "Error";
+        document.getElementById("eth").textContent = "Error";
+        document.getElementById("updated").textContent = "Last updated: error fetching data";
+        console.error(err);
+      }
+    }
+
+    // initial load + refresh every 10 seconds
+    fetchPrices();
+    setInterval(fetchPrices, 10000);
+  </script>
+</body>
+</html>
