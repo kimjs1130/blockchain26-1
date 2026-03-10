@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Crypto Prices</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 100px;
+    }
+    h1 {
+      font-size: 40px;
+    }
+    .price {
+      font-size: 28px;
+      margin: 20px 0;
+    }
+    #updated {
+      margin-top: 30px;
+      font-size: 16px;
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Live Crypto Prices</h1>
+
+  <div class="price">
+    Bitcoin (USD): <span id="btc">Loading...</span>
+  </div>
+
+  <div class="price">
+    Ethereum (USD): <span id="eth">Loading...</span>
+  </div>
+
+  <div id="updated">Last updated: -</div>
+
+<script>
+let interval = 10000;   // 기본 10초
+let timer;
+
+async function fetchPrices() {
+  try {
+    const url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd";
+    const res = await fetch(url);
+
+    if (!res.ok) throw new Error("HTTP " + res.status);
+
+    const data = await res.json();
+
+    document.getElementById("btc").textContent = data.bitcoin.usd;
+    document.getElementById("eth").textContent = data.ethereum.usd;
+
+    const now = new Date();
+    document.getElementById("updated").textContent =
+      "Last updated: " + now.toLocaleString();
+
+    interval = 10000;  // 성공하면 다시 10초로 복구
+
+  } catch (err) {
+    console.log("API error, slowing down...");
+
+    // 실패하면 2배씩 느리게 (최대 2분)
+    interval = Math.min(interval * 2, 120000);
+  }
+
+  clearTimeout(timer);
+  timer = setTimeout(fetchPrices, interval);
+}
+
+fetchPrices();
+</script>
