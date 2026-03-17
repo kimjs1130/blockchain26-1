@@ -342,59 +342,6 @@ demo3.html → 트랜잭션 추적
 
 ### 🔹 지갑 연결 화면
 
-![wallet](./images/wallet.png)
-
----
-
-### 🔹 ETH 송금 화면
-
-![send](./images/send.png)
-
----
-
-### 🔹 트랜잭션 추적 화면
-
-![track](./images/track.png)
-
----
-
-## ⚠️ 문제 해결
-
-### ❌ Track 버튼 동작 안할 때
-
-* TX hash 오류
-* 트랜잭션 아직 미확정 (pending)
-* RPC 문제
-
-✔ 해결 방법:
-
-* 10~30초 대기 후 재시도
-* Sepolia Etherscan에서 확인
-* RPC 변경
-
----
-
-### ❌ 잔액 부족
-
-* Faucet에서 Sepolia ETH 수령 필요
-
----
-
-### ❌ MetaMask 없음
-
-* 확장 프로그램 설치 필요
-
----
-
-## 🌐 네트워크 정보
-
-* Ethereum Sepolia Testnet
-* Explorer: https://sepolia.etherscan.io
-
----
-
-## 👨‍💻 작성자
-
 
 ![alt text](image.png)
 
