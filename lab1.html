@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Solidity Lab Simulator</title>
+<style>
+body{
+  margin:0;
+  font-family: Consolas, monospace;
+  background:#0a0e27;
+  color:#fff;
+}
+.container{
+  display:flex;
+  height:100vh;
+}
+.editor, .panel, .interaction{
+  padding:10px;
+  overflow:auto;
+}
+.editor{
+  width:40%;
+  background:#111633;
+}
+.panel{
+  width:30%;
+  background:#1a1f4a;
+}
+.interaction{
+  width:30%;
+  background:#111633;
+}
+textarea{
+  width:100%;
+  height:80%;
+  background:#0a0e27;
+  color:#00d4ff;
+  border:none;
+  font-size:14px;
+}
+button{
+  margin:5px;
+  padding:10px;
+  border:none;
+  cursor:pointer;
+}
+.compile{background:#00d4ff;}
+.deploy{background:#10b981;}
+.call{background:#7c3aed;}
+</style>
+</head>
+
+<body>
+
+<div id="launcher">
+  <h1 style="text-align:center;">🚀 Solidity Lab</h1>
+  <div style="text-align:center;">
+    <button onclick="startLab()">Lab 1 시작</button>
+  </div>
+</div>
+
+<div id="lab" style="display:none;">
+  <div class="container">
+
+    <!-- 에디터 -->
+    <div class="editor">
+      <h3>Code Editor</h3>
+      <textarea id="code">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+contract HelloWorld {
+    string public greet = "Hello World";
+}</textarea>
+      <br>
+      <button class="compile" onclick="compile()">컴파일</button>
+      <button class="deploy" onclick="deploy()">배포</button>
+    </div>
+
+    <!-- 중앙 -->
+    <div class="panel">
+      <h3>컨트롤</h3>
+      <div id="status">대기중...</div>
+      <h4>계정</h4>
+      <select id="account"></select>
+      <div id="balance"></div>
+    </div>
+
+    <!-- 우측 -->
+    <div class="interaction">
+      <h3>인터랙션</h3>
+      <div id="functions">배포 필요</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+// =====================
+// 기본 상태
+// =====================
+let compiled = false;
+let deployed = false;
+let storage = {};
+let accounts = [
+  {addr:"0x111", balance:100},
+  {addr:"0x222", balance:100},
+];
+
+// 계정 세팅
+const accSel = document.getElementById("account");
+accounts.forEach((a,i)=>{
+  let opt=document.createElement("option");
+  opt.value=i;
+  opt.text=a.addr;
+  accSel.appendChild(opt);
+});
+updateBalance();
+
+function updateBalance(){
+  let i=accSel.value;
+  document.getElementById("balance").innerText=
+    "잔액: "+accounts[i].balance+" ETH";
+}
+
+// =====================
+// 페이지 이동
+// =====================
+function startLab(){
+  document.getElementById("launcher").style.display="none";
+  document.getElementById("lab").style.display="block";
+}
+
+// =====================
+// 컴파일
+// =====================
+function compile(){
+  let code=document.getElementById("code").value;
+
+  if(!code.includes("contract")){
+    alert("컨트랙트 없음");
+    return;
+  }
+
+  compiled=true;
+  document.getElementById("status").innerText="컴파일 성공";
+}
+
+// =====================
+// 배포
+// =====================
+function deploy(){
+  if(!compiled){
+    alert("컴파일 먼저");
+    return;
+  }
+
+  deployed=true;
+  parseContract();
+
+  document.getElementById("status").innerText="배포 완료";
+  renderFunctions();
+}
+
+// =====================
+// 파싱
+// =====================
+function parseContract(){
+  let code=document.getElementById("code").value;
+
+  // public 변수 찾기
+  let match = code.match(/string public (\w+) = "([^"]+)"/);
+  if(match){
+    storage[match[1]]=match[2];
+  }
+
+  // int
+  let match2 = code.match(/int public (\w+) = (\d+)/);
+  if(match2){
+    storage[match2[1]]=parseInt(match2[2]);
+  }
+}
+
+// =====================
+// UI 생성
+// =====================
+function renderFunctions(){
+  let div=document.getElementById("functions");
+  div.innerHTML="";
+
+  for(let key in storage){
+    let btn=document.createElement("button");
+    btn.className="call";
+    btn.innerText=key+"()";
+    btn.onclick=()=>{
+      alert(key+": "+storage[key]);
+    };
+    div.appendChild(btn);
+  }
+}
+
+</script>
+
+</body>
+</html>
