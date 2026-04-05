@@ -2,204 +2,250 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Solidity Lab Simulator</title>
 <style>
-body{
-  margin:0;
-  font-family: Consolas, monospace;
-  background:#0a0e27;
-  color:#fff;
-}
-.container{
-  display:flex;
-  height:100vh;
-}
-.editor, .panel, .interaction{
-  padding:10px;
-  overflow:auto;
-}
-.editor{
-  width:40%;
-  background:#111633;
-}
-.panel{
-  width:30%;
-  background:#1a1f4a;
-}
-.interaction{
-  width:30%;
-  background:#111633;
-}
-textarea{
-  width:100%;
-  height:80%;
-  background:#0a0e27;
-  color:#00d4ff;
-  border:none;
-  font-size:14px;
-}
-button{
-  margin:5px;
-  padding:10px;
-  border:none;
-  cursor:pointer;
-}
-.compile{background:#00d4ff;}
-.deploy{background:#10b981;}
-.call{background:#7c3aed;}
+  :root{--bg:#0b1026;--panel:#141a3b;--line:#2d3977;--cyan:#17d4ff;--green:#22c55e;--orange:#ff9d00;--pink:#ec4899;--text:#eef4ff;--muted:#8ca0d9}
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--text);font-family:"Segoe UI","Malgun Gothic",sans-serif;background:linear-gradient(180deg,#0a0f25,#0b1026)}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 24px;border-bottom:1px solid var(--line);background:rgba(8,12,30,.85)}
+  .title{font-size:28px;font-weight:900}
+  .subtitle{margin-top:4px;color:var(--muted);font-size:13px}
+  .tabs{display:flex;gap:10px;flex-wrap:wrap}
+  .tab{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:10px 16px;cursor:pointer;font-weight:800}
+  .tab.active{color:var(--cyan);border-color:rgba(23,212,255,.45);background:rgba(23,212,255,.08)}
+  .layout{display:grid;grid-template-columns:1.15fr .8fr .95fr;gap:18px;padding:18px}
+  .panel{background:linear-gradient(180deg,rgba(20,26,59,.96),rgba(14,19,43,.98));border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .panel-header{padding:16px 18px;border-bottom:1px solid rgba(45,57,119,.7);display:flex;justify-content:space-between;align-items:center}
+  .panel-title{font-size:18px;font-weight:800}
+  .panel-body{padding:18px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .muted,.note,.editor-meta{color:var(--muted)}
+  .editor-meta{font-size:12px;margin-bottom:10px}
+  .note{font-size:12px;margin-top:8px}
+  textarea,select,input{width:100%;border:1px solid #202b64;border-radius:14px;background:#0a102a;color:#7ce7ff;outline:none}
+  textarea{min-height:680px;resize:vertical;padding:18px;font:16px/1.5 Consolas,"Fira Code",monospace}
+  select,input{padding:10px 12px;font-size:14px;background:#101735;color:var(--text)}
+  .ghost,.mini-btn,.action-btn,.fn-btn{border:none;border-radius:12px;cursor:pointer;font-weight:800}
+  .ghost,.mini-btn{border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);padding:9px 12px}
+  .actions{display:grid;gap:10px;margin-bottom:16px}
+  .action-btn{padding:14px 16px;color:#fff;font-size:15px}
+  .compile-btn{background:linear-gradient(90deg,#1ec8f7,#4b8fff)}
+  .deploy-btn{background:linear-gradient(90deg,#ffb000,#ff8800)}
+  .reset-btn{background:rgba(255,255,255,.03);color:var(--muted);border:1px solid var(--line)}
+  .card,.status-card,.fn-card{border:1px solid var(--line);border-radius:14px;padding:14px;background:rgba(255,255,255,.03);margin-bottom:14px}
+  .status-card{background:linear-gradient(180deg,rgba(23,212,255,.12),rgba(255,255,255,.03))}
+  .status-title{font-size:16px;font-weight:900;margin-bottom:6px}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .stat{border:1px solid rgba(45,57,119,.6);background:rgba(255,255,255,.02);border-radius:12px;padding:14px;text-align:center}
+  .stat-value{color:var(--cyan);font-size:24px;font-weight:900}
+  .stat-label{color:var(--muted);font-size:12px;margin-top:6px}
+  .contract-name{font-size:18px;font-weight:900;margin-bottom:6px}
+  .address{color:#5bbdff;font-family:Consolas,monospace;font-size:13px;word-break:break-all}
+  .hero{border:1px solid rgba(23,212,255,.3);border-radius:16px;min-height:200px;display:flex;align-items:center;justify-content:center;flex-direction:column;background:linear-gradient(180deg,rgba(7,10,28,.95),rgba(11,16,38,.95));margin-bottom:14px;text-align:center}
+  .hero-label{color:var(--muted);font-size:11px;letter-spacing:.28em;margin-bottom:18px}
+  .hero-value{color:var(--cyan);font-size:56px;font-weight:900}
+  .hero-note{margin-top:12px;color:var(--muted);font-size:13px;max-width:90%}
+  .section-title{color:#a9cbff;font-size:14px;font-weight:900;margin:18px 0 10px}
+  .badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:900;margin-left:8px}
+  .view-badge{background:rgba(34,197,94,.15);color:#95ffc0}
+  .tx-badge{background:rgba(255,157,0,.16);color:#ffd38a}
+  .owner-badge{background:rgba(236,72,153,.15);color:#ffb8d7}
+  .fn-title{font-size:16px;font-weight:900;margin-bottom:10px}
+  .fn-buttons{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .fn-btn{color:#fff;padding:10px 16px}
+  .view-btn{background:linear-gradient(90deg,#13d69a,#10b981)}
+  .tx-btn{background:linear-gradient(90deg,#ff9a1f,#ff7a00)}
+  .pink-btn{background:linear-gradient(90deg,#ec4899,#db2777)}
+  .fn-result{border:1px solid rgba(23,212,255,.22);background:rgba(23,212,255,.06);border-radius:12px;padding:12px 14px;font-size:14px}
+  .fn-result.tx{border-color:rgba(255,157,0,.25);background:rgba(255,157,0,.08)}
+  .history-item{border-top:1px solid rgba(45,57,119,.6);padding-top:12px;margin-top:12px}
+  .history-item:first-child{border-top:none;padding-top:0;margin-top:0}
+  .flow-step{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;background:rgba(255,255,255,.02)}
+  .flow-step strong{color:var(--cyan)}
+  @media (max-width:1500px){.layout{grid-template-columns:1fr}textarea{min-height:420px}}
 </style>
 </head>
-
 <body>
-
-<div id="launcher">
-  <h1 style="text-align:center;">🚀 Solidity Lab</h1>
-  <div style="text-align:center;">
-    <button onclick="startLab()">Lab 1 시작</button>
+<div class="topbar">
+  <div>
+    <div class="title">Solidity Lab Simulator</div>
+    <div class="subtitle">Counter, CounterNumber, Faucet practice in one page</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-lab="counter">Counter.sol</button>
+    <button class="tab" data-lab="number">CounterNumber.sol</button>
+    <button class="tab" data-lab="faucet">Faucet.sol</button>
   </div>
 </div>
 
-<div id="lab" style="display:none;">
-  <div class="container">
-
-    <!-- 에디터 -->
-    <div class="editor">
-      <h3>Code Editor</h3>
-      <textarea id="code">// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
-
-contract HelloWorld {
-    string public greet = "Hello World";
-}</textarea>
-      <br>
-      <button class="compile" onclick="compile()">컴파일</button>
-      <button class="deploy" onclick="deploy()">배포</button>
+<div class="layout">
+  <section class="panel">
+    <div class="panel-header">
+      <div class="panel-title">코드 에디터</div>
+      <div class="row">
+        <button class="ghost" id="resetCodeBtn">코드 초기화</button>
+        <button class="ghost" id="copyCodeBtn">코드 복사</button>
+      </div>
     </div>
-
-    <!-- 중앙 -->
-    <div class="panel">
-      <h3>컨트롤</h3>
-      <div id="status">대기중...</div>
-      <h4>계정</h4>
-      <select id="account"></select>
-      <div id="balance"></div>
+    <div class="panel-body">
+      <div class="editor-meta">Solidity 소스</div>
+      <textarea id="code"></textarea>
     </div>
+  </section>
 
-    <!-- 우측 -->
-    <div class="interaction">
-      <h3>인터랙션</h3>
-      <div id="functions">배포 필요</div>
+  <section class="panel">
+    <div class="panel-header"><div class="panel-title">컴파일 & 배포</div></div>
+    <div class="panel-body">
+      <div class="actions">
+        <button class="action-btn compile-btn" id="compileBtn">컴파일</button>
+        <button class="action-btn deploy-btn" id="deployBtn">배포</button>
+        <button class="action-btn reset-btn" id="resetVmBtn">가상 VM 초기화</button>
+      </div>
+      <div class="status-card" id="statusBox"></div>
+      <div class="card">
+        <div class="muted" style="margin-bottom:8px">현재 계정</div>
+        <select id="account"></select>
+        <div class="note" id="accountInfo"></div>
+      </div>
+      <div class="card">
+        <div class="muted" style="margin-bottom:8px">가상 시간</div>
+        <div class="row">
+          <button class="mini-btn" id="advance1hBtn">+1시간</button>
+          <button class="mini-btn" id="advance24hBtn">+24시간</button>
+        </div>
+        <div class="note" id="timeInfo"></div>
+      </div>
+      <div class="grid-2">
+        <div class="stat"><div class="stat-value" id="blockNumber">1</div><div class="stat-label">블록</div></div>
+        <div class="stat"><div class="stat-value" id="txCount">0</div><div class="stat-label">트랜잭션 수</div></div>
+        <div class="stat"><div class="stat-value" id="chainId">1337</div><div class="stat-label">체인 ID</div></div>
+        <div class="stat"><div class="stat-value">VM</div><div class="stat-label">실행 환경</div></div>
+      </div>
+      <div class="card" id="flowBox"></div>
     </div>
+  </section>
 
-  </div>
+  <section class="panel">
+    <div class="panel-header">
+      <div class="panel-title">배포된 컨트랙트</div>
+      <div class="muted" id="deployCount">0개 배포됨</div>
+    </div>
+    <div class="panel-body">
+      <div class="card" id="contractCard"></div>
+      <div class="hero">
+        <div class="hero-label">STATE</div>
+        <div class="hero-value" id="heroValue">0</div>
+        <div class="hero-note" id="heroNote">배포 후 상태가 여기에 표시됩니다.</div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>가스비 히스토리</strong>
+          <span style="color:#ffbf44;font-weight:900" id="gasTotal">Total 0 gas</span>
+        </div>
+        <div class="note" id="historyArea">아직 트랜잭션이 없습니다.</div>
+      </div>
+      <div id="functionsArea"></div>
+    </div>
+  </section>
 </div>
 
 <script>
+const LAB_CODES={
+counter:`// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
 
-// =====================
-// 기본 상태
-// =====================
-let compiled = false;
-let deployed = false;
-let storage = {};
-let accounts = [
-  {addr:"0x111", balance:100},
-  {addr:"0x222", balance:100},
-];
+contract Counter {
+    uint public counter;
+    constructor() { counter = 0; }
+    function count() public { counter = counter + 1; }
+    function get() public view returns (uint) { return counter; }
+}`,
+number:`// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
 
-// 계정 세팅
-const accSel = document.getElementById("account");
-accounts.forEach((a,i)=>{
-  let opt=document.createElement("option");
-  opt.value=i;
-  opt.text=a.addr;
-  accSel.appendChild(opt);
-});
-updateBalance();
+contract CounterNumber {
+    int private _number = 10;
+    function getNumber() public view returns (int) { return _number; }
+    function setNumber(int newNumber) public { _number = newNumber; }
+}`,
+faucet:`// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-function updateBalance(){
-  let i=accSel.value;
-  document.getElementById("balance").innerText=
-    "잔액: "+accounts[i].balance+" ETH";
-}
+contract Faucet {
+    address payable public owner;
+    uint256 public constant WITHDRAWAL_AMOUNT = 0.1 ether;
+    uint256 public constant LOCK_TIME = 1 days;
+    mapping(address => uint256) public lastWithdrawalTime;
+    event Withdrawal(address indexed to, uint256 amount);
+    event Deposit(address indexed from, uint256 amount);
+    constructor() { owner = payable(msg.sender); }
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
+    function withdraw() public {
+        require(block.timestamp >= lastWithdrawalTime[msg.sender] + LOCK_TIME, "Wait 24 hours");
+        require(address(this).balance >= WITHDRAWAL_AMOUNT, "Not enough funds");
+        lastWithdrawalTime[msg.sender] = block.timestamp;
+        payable(msg.sender).transfer(WITHDRAWAL_AMOUNT);
+        emit Withdrawal(msg.sender, WITHDRAWAL_AMOUNT);
+    }
+    function deposit() public payable { emit Deposit(msg.sender, msg.value); }
+    function withdrawAll() public onlyOwner {
+        uint256 amount = address(this).balance;
+        owner.transfer(amount);
+        emit Withdrawal(owner, amount);
+    }
+    receive() external payable { emit Deposit(msg.sender, msg.value); }
+    function getBalance() public view returns (uint256) { return address(this).balance; }
+}`};
 
-// =====================
-// 페이지 이동
-// =====================
-function startLab(){
-  document.getElementById("launcher").style.display="none";
-  document.getElementById("lab").style.display="block";
-}
+let vm,activeLab="counter",compiled=false,deployed=false,contractState={};
+const codeEl=document.getElementById("code"),accountEl=document.getElementById("account"),accountInfoEl=document.getElementById("accountInfo"),statusBoxEl=document.getElementById("statusBox"),contractCardEl=document.getElementById("contractCard"),heroValueEl=document.getElementById("heroValue"),heroNoteEl=document.getElementById("heroNote"),functionsAreaEl=document.getElementById("functionsArea"),historyAreaEl=document.getElementById("historyArea"),gasTotalEl=document.getElementById("gasTotal"),blockNumberEl=document.getElementById("blockNumber"),txCountEl=document.getElementById("txCount"),chainIdEl=document.getElementById("chainId"),deployCountEl=document.getElementById("deployCount"),timeInfoEl=document.getElementById("timeInfo"),flowBoxEl=document.getElementById("flowBox");
 
-// =====================
-// 컴파일
-// =====================
-function compile(){
-  let code=document.getElementById("code").value;
+function vmDefaults(){return{accounts:[{address:"0x5B38Da6a701c568545dCfcB03FcB875f56beddC4",balance:100,label:"Account 1"},{address:"0xAb8483F64d9C6d1EcF9b849Ae677dD3315835Cb2",balance:100,label:"Account 2"},{address:"0x4B20993Bc481177ec7E8f571CeCaE8A9e22C02db",balance:100,label:"Account 3"}],chainId:1337,blockNumber:1,txCount:0,totalGas:0,now:Math.floor(Date.now()/1000)}}
+function currentAccount(){return vm.accounts[Number(accountEl.value||0)]}
+function shorten(a){return `${a.slice(0,8)}...${a.slice(-6)}`}
+function ethText(v){return `${Number(v).toFixed(4)} ETH`}
+function setStatus(title,detail,tone="info"){const c=tone==="error"?"#ff7b7b":tone==="warn"?"#ffcf6b":"#90ffd2";statusBoxEl.innerHTML=`<div class="status-title" style="color:${c}">${title}</div><div>${detail}</div><div class="note">주황 버튼은 상태 변경, 초록 버튼은 읽기 전용 함수입니다.</div>`}
+function updateAccountInfo(){const a=currentAccount();accountInfoEl.innerHTML=`Balance <strong>${ethText(a.balance)}</strong><br>msg.sender <span style="color:#5bbdff">${a.address}</span>`}
+function updateTimeInfo(){timeInfoEl.textContent=`가상 시간: ${new Date(vm.now*1000).toLocaleString("ko-KR")} | timestamp ${vm.now}`}
+function setVmMetrics(){blockNumberEl.textContent=String(vm.blockNumber);txCountEl.textContent=String(vm.txCount);chainIdEl.textContent=String(vm.chainId);gasTotalEl.textContent=`Total ${vm.totalGas.toLocaleString()} gas`;updateTimeInfo()}
+function fillAccounts(){accountEl.innerHTML="";vm.accounts.forEach((a,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent=`${a.label} (${shorten(a.address)})`;accountEl.appendChild(o)});updateAccountInfo()}
+function pushHistory(g){if(historyAreaEl.textContent.includes("아직"))historyAreaEl.innerHTML="";const d=document.createElement("div");d.className="history-item";d.innerHTML=`<strong>${g.toLocaleString()} gas</strong><div class="note">블록 #${vm.blockNumber} | 누적 ${vm.totalGas.toLocaleString()} gas</div>`;historyAreaEl.prepend(d)}
+function spendGas(g){const a=currentAccount(),ethUsed=g*20/1e9;a.balance=Math.max(0,a.balance-ethUsed);vm.totalGas+=g;vm.txCount+=1;vm.blockNumber+=1;updateAccountInfo();setVmMetrics();pushHistory(g)}
+function generateAddress(){const chars="abcdef0123456789";let t="0x";for(let i=0;i<40;i+=1)t+=chars[Math.floor(Math.random()*chars.length)];return t}
+function setFlow(){flowBoxEl.innerHTML=activeLab!=="faucet"?`<div class="section-title">실습 흐름</div><div class="flow-step"><strong>1.</strong> 컴파일 후 배포</div><div class="flow-step"><strong>2.</strong> 현재 값 조회</div><div class="flow-step"><strong>3.</strong> 상태 변경 후 결과 비교</div>`:`<div class="section-title">Faucet 흐름</div><div class="flow-step"><strong>1.</strong> 배포하면 현재 계정이 owner가 됩니다</div><div class="flow-step"><strong>2.</strong> deposit 또는 receive로 ETH를 컨트랙트에 넣습니다</div><div class="flow-step"><strong>3.</strong> 선택한 계정으로 0.1 ETH를 출금합니다</div><div class="flow-step"><strong>4.</strong> owner 계정만 전액 회수할 수 있습니다</div>`}
+function resetContractUi(){compiled=false;deployed=false;contractState={type:activeLab,name:"",address:"",storage:{},views:[],writes:[]};contractCardEl.innerHTML=`<div class="contract-name">배포 전</div><div class="muted">컴파일 후 배포를 누르면 주소와 함수 UI가 생성됩니다.</div>`;deployCountEl.textContent="0개 배포됨";heroValueEl.textContent="0";heroNoteEl.textContent=activeLab==="faucet"?"배포 후 owner와 컨트랙트 잔액이 표시됩니다.":"배포 후 상태가 여기에 표시됩니다.";functionsAreaEl.innerHTML=`<div class="muted">배포 후 함수 UI가 여기에 표시됩니다.</div>`;historyAreaEl.textContent="아직 트랜잭션이 없습니다.";setVmMetrics()}
+function setActiveTab(lab){activeLab=lab;document.querySelectorAll(".tab").forEach(tab=>tab.classList.toggle("active",tab.dataset.lab===lab));codeEl.value=LAB_CODES[lab];resetContractUi();setFlow();setStatus("탭 전환 완료",`${lab}.sol 코드를 불러왔습니다.`)}
+function parseGenericContract(code){const m=code.match(/contract\s+(\w+)/);if(!m)throw new Error("Could not find contract name.");const s={type:activeLab,name:m[1],address:"",storage:{},views:[],writes:[]};const vr=/(?:^|\n)\s*(uint|uint256|int|int256|string)\s+(public|private)\s+(_?\w+)\s*(?:=\s*([^;]+))?;/g;let x;while((x=vr.exec(code))!==null){const type=x[1],visibility=x[2],name=x[3],raw=x[4];let value=0;if(type==="string")value=raw?raw.trim().replace(/^"/,"").replace(/"$/,""):"";if(type.startsWith("int")||type.startsWith("uint"))value=raw?Number(raw.trim()):0;s.storage[name]=value;if(visibility==="public")s.views.push({name,source:name})}const fr=/function\s+(\w+)\s*\(([^)]*)\)\s*public\s*(view|pure)?(?:\s+returns\s*\(([^)]+)\))?\s*\{([\s\S]*?)\}/g;while((x=fr.exec(code))!==null){const name=x[1],paramsRaw=x[2].trim(),mut=(x[3]||"").trim(),body=x[5];const params=paramsRaw?paramsRaw.split(",").map(p=>{const bits=p.trim().split(/\s+/);return{type:bits[0],name:bits[bits.length-1]}}):[];if(mut==="view"||mut==="pure"){const r=body.match(/return\s+(_?\w+)\s*;/);s.views.push({name,source:r?r[1]:name})}else{const inc=body.match(/(_?\w+)\s*=\s*\1\s*\+\s*1\s*;/),asg=body.match(/(_?\w+)\s*=\s*(\w+)\s*;/);s.writes.push({name,params,action:inc?{type:"increment",target:inc[1]}:asg?{type:"assign",target:asg[1]}:{type:"custom"}})}}return s}
+function buildFaucetState(){return{type:"faucet",name:"Faucet",address:"",storage:{owner:"",contractBalance:0,withdrawalAmount:0.1,lockTime:86400},lastWithdrawalTime:{},views:[{name:"getBalance"}],writes:[{name:"deposit"},{name:"receive"},{name:"withdraw"},{name:"withdrawAll"}]}}
+function compileCode(){const code=codeEl.value;if(!code.includes("contract")){setStatus("컴파일 실패","contract 키워드를 찾지 못했습니다.","error");return}try{contractState=activeLab==="faucet"?buildFaucetState():parseGenericContract(code);compiled=true;deployed=false;setStatus("컴파일 성공",`${contractState.name} 준비 완료`)}catch(e){setStatus("컴파일 실패",e.message,"error")}}
+function deployContract(){if(!compiled){setStatus("배포 실패","먼저 컴파일을 실행해 주세요.","warn");return}deployed=true;contractState.address=generateAddress();if(contractState.type==="faucet"){contractState.storage.owner=currentAccount().address;contractState.lastWithdrawalTime={};vm.accounts.forEach(a=>contractState.lastWithdrawalTime[a.address]=0)}contractCardEl.innerHTML=`<div class="contract-name">${contractState.name}</div><div class="address">at ${contractState.address}</div>`;deployCountEl.textContent="1개 배포됨";renderFunctions();updateHero();spendGas(179490);setStatus("배포 완료",`${contractState.name} 배포가 완료되었습니다.`)}
+function updateHero(){if(!deployed){heroValueEl.textContent="0";heroNoteEl.textContent="배포 후 상태가 여기에 표시됩니다.";return}if(contractState.type==="counter"){heroValueEl.textContent=contractState.storage.counter??0;heroNoteEl.textContent=`count() 호출 횟수: ${contractState.storage.counter??0}`;return}if(contractState.type==="number"){heroValueEl.textContent=contractState.storage._number??0;heroNoteEl.textContent="_number 현재 값";return}heroValueEl.textContent=ethText(contractState.storage.contractBalance);heroNoteEl.textContent=`owner ${shorten(contractState.storage.owner)} | 1회 출금 ${ethText(contractState.storage.withdrawalAmount)}`}
+function renderFunctions(){if(!deployed)return;if(contractState.type==="faucet"){renderFaucetFunctions();return}renderGenericFunctions()}
+function renderGenericFunctions(){let html="";if(contractState.views.length){html+=`<div class="section-title">읽기 함수</div>`;contractState.views.forEach(v=>{html+=`<div class="fn-card"><div class="fn-title">${v.name}()<span class="badge view-badge">VIEW</span></div><div class="fn-buttons"><button class="fn-btn view-btn" data-view="${v.name}">${v.name}</button></div><div class="fn-result" id="result-view-${v.name}">${contractState.storage[v.source]??"아직 실행하지 않았습니다."}</div></div>`})}if(contractState.writes.length){html+=`<div class="section-title">상태 변경 함수</div>`;contractState.writes.forEach(w=>{const inputs=w.params.map(p=>`<input id="input-${w.name}-${p.name}" type="${p.type.includes("int")?"number":"text"}" placeholder="${p.name}">`).join("");html+=`<div class="fn-card"><div class="fn-title">${w.name}()<span class="badge tx-badge">TRANSACT</span></div>${inputs}<div class="fn-buttons" style="margin-top:${w.params.length?"10px":"0"}"><button class="fn-btn tx-btn" data-write="${w.name}">${w.name}</button></div><div class="fn-result tx" id="result-write-${w.name}">아직 트랜잭션이 없습니다.</div></div>`})}functionsAreaEl.innerHTML=html;document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{const v=contractState.views.find(i=>i.name===b.dataset.view);document.getElementById(`result-view-${v.name}`).textContent=`${contractState.storage[v.source]}`}));document.querySelectorAll("[data-write]").forEach(b=>b.addEventListener("click",()=>executeGenericWrite(b.dataset.write)))}
+function executeGenericWrite(name){const w=contractState.writes.find(i=>i.name===name);if(!w)return;let msg="상태 변화 없음";if(w.action.type==="increment"){const before=contractState.storage[w.action.target]||0;contractState.storage[w.action.target]=before+1;msg=`${w.action.target}: ${before} -> ${contractState.storage[w.action.target]}`;spendGas(44080)}else if(w.action.type==="assign"){const p=w.params[0],input=document.getElementById(`input-${name}-${p.name}`);if(!input.value.trim()){document.getElementById(`result-write-${name}`).textContent="먼저 값을 입력해 주세요.";return}const before=contractState.storage[w.action.target];contractState.storage[w.action.target]=p.type.includes("int")?Number(input.value):input.value;msg=`${w.action.target}: ${before} -> ${contractState.storage[w.action.target]}`;spendGas(52114)}document.getElementById(`result-write-${name}`).innerHTML=`<strong>성공</strong><br>${msg}`;updateHero();contractState.views.forEach(v=>{const t=document.getElementById(`result-view-${v.name}`);if(t&&contractState.storage[v.source]!==undefined)t.textContent=`${contractState.storage[v.source]}`})}
+function renderFaucetFunctions(){const owner=contractState.storage.owner,current=currentAccount().address,coolEnd=(contractState.lastWithdrawalTime[current]||0)+contractState.storage.lockTime,wait=Math.max(0,coolEnd-vm.now),waitText=wait>0?`${wait}초 남음`:"즉시 출금 가능";functionsAreaEl.innerHTML=`<div class="section-title">Faucet 상태</div><div class="card"><div><strong>owner</strong><span class="badge owner-badge">${shorten(owner)}</span></div><div class="note">컨트랙트 잔액 ${ethText(contractState.storage.contractBalance)}</div><div class="note">선택 계정 쿨다운 ${waitText}</div></div><div class="section-title">읽기 함수</div><div class="fn-card"><div class="fn-title">getBalance()<span class="badge view-badge">VIEW</span></div><div class="fn-buttons"><button class="fn-btn view-btn" id="faucetGetBalanceBtn">getBalance</button></div><div class="fn-result" id="faucetBalanceResult">아직 실행하지 않았습니다.</div></div><div class="section-title">입금 / receive</div><div class="fn-card"><div class="fn-title">deposit() / receive()<span class="badge tx-badge">TRANSACT</span></div><input id="depositAmountInput" type="number" min="0" step="0.1" placeholder="ETH 금액"><div class="fn-buttons" style="margin-top:10px"><button class="fn-btn tx-btn" id="depositBtn">deposit</button><button class="fn-btn pink-btn" id="receiveBtn">receive</button></div><div class="fn-result tx" id="depositResult">먼저 컨트랙트 잔액을 채워 주세요.</div></div><div class="section-title">출금 / owner 회수</div><div class="fn-card"><div class="fn-title">withdraw()<span class="badge tx-badge">TRANSACT</span></div><div class="fn-buttons"><button class="fn-btn tx-btn" id="withdrawBtn">withdraw</button></div><div class="fn-result tx" id="withdrawResult">0.1 ETH 출금 시뮬레이션</div></div><div class="fn-card"><div class="fn-title">withdrawAll()<span class="badge owner-badge">OWNER ONLY</span></div><div class="fn-buttons"><button class="fn-btn pink-btn" id="withdrawAllBtn">withdrawAll</button></div><div class="fn-result tx" id="withdrawAllResult">owner 계정에서만 성공합니다.</div></div>`;document.getElementById("faucetGetBalanceBtn").addEventListener("click",()=>{document.getElementById("faucetBalanceResult").textContent=`${ethText(contractState.storage.contractBalance)}`});document.getElementById("depositBtn").addEventListener("click",()=>faucetDeposit("deposit"));document.getElementById("receiveBtn").addEventListener("click",()=>faucetDeposit("receive"));document.getElementById("withdrawBtn").addEventListener("click",faucetWithdraw);document.getElementById("withdrawAllBtn").addEventListener("click",faucetWithdrawAll)}
+function faucetDeposit(mode){const input=document.getElementById("depositAmountInput"),amount=Number(input.value),account=currentAccount(),result=document.getElementById("depositResult");if(!amount||amount<=0){result.textContent="입금할 ETH 값을 입력해 주세요.";return}if(account.balance<amount){result.textContent="계정 잔액이 부족합니다.";return}account.balance-=amount;contractState.storage.contractBalance+=amount;spendGas(46310);result.innerHTML=`<strong>성공</strong><br>${mode}로 ${ethText(amount)} 입금 완료`;updateHero();renderFaucetFunctions()}
+function faucetWithdraw(){const account=currentAccount(),result=document.getElementById("withdrawResult"),last=contractState.lastWithdrawalTime[account.address]||0,next=last+contractState.storage.lockTime;if(vm.now<next){result.textContent=`실패: 24시간 대기 필요 (${next-vm.now}초 남음)`;return}if(contractState.storage.contractBalance<contractState.storage.withdrawalAmount){result.textContent="실패: 잔액이 부족합니다.";return}contractState.storage.contractBalance-=contractState.storage.withdrawalAmount;account.balance+=contractState.storage.withdrawalAmount;contractState.lastWithdrawalTime[account.address]=vm.now;spendGas(64080);result.innerHTML=`<strong>성공</strong><br>${ethText(contractState.storage.withdrawalAmount)} 출금 완료`;updateHero();renderFaucetFunctions()}
+function faucetWithdrawAll(){const account=currentAccount(),result=document.getElementById("withdrawAllResult"),amount=contractState.storage.contractBalance;if(account.address!==contractState.storage.owner){result.textContent="실패: owner만 호출할 수 있습니다.";return}if(amount<=0){result.textContent="회수할 잔액이 없습니다.";return}account.balance+=amount;contractState.storage.contractBalance=0;spendGas(58211);result.innerHTML=`<strong>성공</strong><br>owner가 ${ethText(amount)} 전액 회수`;updateHero();renderFaucetFunctions()}
+function resetVm(){vm=vmDefaults();fillAccounts();resetContractUi();setFlow();setStatus("가상 VM 초기화","계정, 블록, 시간, 가스 기록을 초기화했습니다.")}
 
-  if(!code.includes("contract")){
-    alert("컨트랙트 없음");
-    return;
-  }
+document.querySelectorAll(".tab").forEach(tab=>tab.addEventListener("click",()=>setActiveTab(tab.dataset.lab)));
+document.getElementById("compileBtn").addEventListener("click",compileCode);
+document.getElementById("deployBtn").addEventListener("click",deployContract);
+document.getElementById("resetVmBtn").addEventListener("click",resetVm);
+document.getElementById("advance1hBtn").addEventListener("click",()=>{vm.now+=3600;updateTimeInfo();if(deployed&&activeLab==="faucet")renderFaucetFunctions()});
+document.getElementById("advance24hBtn").addEventListener("click",()=>{vm.now+=86400;updateTimeInfo();if(deployed&&activeLab==="faucet")renderFaucetFunctions()});
+document.getElementById("resetCodeBtn").addEventListener("click",()=>{codeEl.value=LAB_CODES[activeLab];setStatus("코드 초기화",`${activeLab}.sol 기본 코드로 되돌렸습니다.`)});
+document.getElementById("copyCodeBtn").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(codeEl.value);setStatus("복사 완료","코드를 클립보드에 복사했습니다.")}catch{setStatus("복사 실패","클립보드 권한이 필요합니다.","warn")}});
+accountEl.addEventListener("change",()=>{updateAccountInfo();if(deployed&&activeLab==="faucet")renderFaucetFunctions()});
 
-  compiled=true;
-  document.getElementById("status").innerText="컴파일 성공";
-}
-
-// =====================
-// 배포
-// =====================
-function deploy(){
-  if(!compiled){
-    alert("컴파일 먼저");
-    return;
-  }
-
-  deployed=true;
-  parseContract();
-
-  document.getElementById("status").innerText="배포 완료";
-  renderFunctions();
-}
-
-// =====================
-// 파싱
-// =====================
-function parseContract(){
-  let code=document.getElementById("code").value;
-
-  // public 변수 찾기
-  let match = code.match(/string public (\w+) = "([^"]+)"/);
-  if(match){
-    storage[match[1]]=match[2];
-  }
-
-  // int
-  let match2 = code.match(/int public (\w+) = (\d+)/);
-  if(match2){
-    storage[match2[1]]=parseInt(match2[2]);
-  }
-}
-
-// =====================
-// UI 생성
-// =====================
-function renderFunctions(){
-  let div=document.getElementById("functions");
-  div.innerHTML="";
-
-  for(let key in storage){
-    let btn=document.createElement("button");
-    btn.className="call";
-    btn.innerText=key+"()";
-    btn.onclick=()=>{
-      alert(key+": "+storage[key]);
-    };
-    div.appendChild(btn);
-  }
-}
-
+vm=vmDefaults();
+fillAccounts();
+setActiveTab("counter");
 </script>
-
 </body>
 </html>
