@@ -1,184 +1,171 @@
-# Week 5 Solidity Practice
+# Solidity Lab Simulator - Lab 1
 
-## 개요
-5주차 프레젠테이션 범위를 기준으로 다음 3가지 주제를 실습했습니다.
+## 📌 프로젝트 개요
+브라우저에서 Solidity 스마트 컨트랙트를 작성하고, 컴파일/배포/함수 실행을 체험할 수 있는 간단한 Solidity Lab Simulator입니다.
 
-- `Counter.sol`
-- `CounterNumber.sol`
-- `Faucet.sol`
+## ⚙️ 실행 방법
+### 1. 파일 실행
+아래 방법 중 하나 선택
 
-이번 실습은 `week5/lab1.html` 시뮬레이터와 Solidity 소스 파일을 함께 사용해서 진행했습니다.
-
-## 실행 방법
-프로젝트 루트에서 아래 방법 중 하나로 실행할 수 있습니다.
-
-### 방법 1
-```powershell
-cd C:\Users\inplu\blockchain\week5
+### 방법 1 (추천)
+```bash
 start lab1.html
 ```
 
-### 방법 2
-```powershell
-cd C:\Users\inplu\blockchain\week5
+### 방법 2 (python 서버)
+```bash
 python -m http.server 8000
 ```
 
-브라우저 접속 주소:
+브라우저 접속:
 
 ```text
 http://localhost:8000/lab1.html
 ```
 
-## 실습 파일
-- `CounterNumber.sol`: 숫자 조회 및 변경 실습
-- `CombinedContract.sol`: 초기 실습용 결합 계약
-- `Faucet.sol`: 입금, 출금, owner 회수 흐름 실습
-- `lab1.html`: 실습용 시뮬레이터 UI
+## 🧪 실습 내용
+### ✔ Combined Contract
+- `greeting` (string)
+- `number` (int)
 
-## 실습 내용 정리
+### ✔ 구현 기능
+getter 함수
+- `getGreeting()`
+- `getNumber()`
 
-### 1. Counter.sol
-카운터 값을 1씩 증가시키는 가장 기본적인 상태 변경 실습입니다.
+setter 함수
+- `setGreeting()`
+- `setNumber()`
 
-실습 흐름:
-- `컴파일`
-- `배포`
-- `counter()` 또는 `get()`으로 초기값 확인
-- `count()` 실행
-- 다시 값 조회해서 증가 여부 확인
+## 🔍 실습 목표
+### 1. public vs private 비교
+- `public` → 자동 getter 생성
+- `private` → 직접 getter 필요
 
-확인한 개념:
-- `public` 상태 변수
-- `view` 함수
-- 상태 변경 함수와 가스 사용
+### 2. 상태 변경 확인
+- setter 실행 후 값 변경 확인
 
-### 2. CounterNumber.sol
-숫자 상태 변수를 읽고 직접 변경하는 실습입니다.
+## 🖥️ 실행 화면
+아래는 실행 결과 화면입니다.
 
-실습 흐름:
-- `컴파일`
-- `배포`
-- `getNumber()`로 초기값 확인
-- `setNumber()`로 새 값 입력
-- 다시 `getNumber()`로 변경 확인
+![실행 화면](image.png)
 
-확인한 개념:
-- `private` 상태 변수
-- getter / setter 함수
-- 입력값에 따른 상태 변경
+## 🧩 기능 설명
+### ✔ 컴파일
+- Solidity 코드 검증
 
-### 3. Faucet.sol
-Faucet 컨트랙트의 입금, 출금, owner 회수 흐름을 실습했습니다.
+### ✔ 배포
+- 컨트랙트 상태 초기화
 
-실습 흐름:
-- `컴파일`
-- `배포`
-- 배포 시 선택된 계정을 `owner`로 설정
-- `deposit()` 또는 `receive()`로 컨트랙트 잔액 충전
-- `getBalance()`로 잔액 확인
-- `withdraw()`로 0.1 ETH 출금
-- `+24시간` 진행 후 재출금 확인
-- `withdrawAll()`로 owner 계정 전액 회수 확인
+### ✔ 인터랙션
+- getter 버튼 → 값 조회
+- setter 함수 → 값 변경
 
-확인한 개념:
-- `owner`
-- `onlyOwner`
-- `msg.sender`
-- `msg.value`
-- `LOCK_TIME`
-- `address(this).balance`
+## 🔥 체크리스트
+- [x] greeting 조회 가능
+- [x] number 조회 가능
+- [x] setter로 값 변경 가능
+- [x] public → private 변경 실험 완료
 
-## 시뮬레이터에서 사용한 버튼 흐름
+## 🚀 추가 과제
+### Faucet Contract 구현
+- ETH를 요청하면 일정량 지급하는 스마트 컨트랙트 작성
 
-### Counter.sol
-- `컴파일`
-- `배포`
-- `counter` 또는 `get`
-- `count`
-- 다시 `counter` 또는 `get`
-
-### CounterNumber.sol
-- `컴파일`
-- `배포`
-- `getNumber`
-- 값 입력
-- `setNumber`
-- 다시 `getNumber`
-
-### Faucet.sol
-- `컴파일`
-- `배포`
-- `getBalance`
-- 금액 입력
-- `deposit` 또는 `receive`
-- `withdraw`
-- `+24시간`
-- `withdraw`
-- 계정 변경 후 `withdrawAll` 확인
-
-## 캡처 이미지 정리
-현재 `week5` 폴더에는 실습 과정 캡처 이미지가 저장되어 있습니다.
-
-- `image.png`
-- `image2.png`
-- `image3.png`
-- `image4.png`
-- `image5.png`
-- `image6.png`
-- `image7.png`
-- `image8.png`
-- `image9.png`
-- `image10.png`
-- `image11.png`
-- `image12.png`
-- `image13.png`
-- `image14.png`
-- `image15.png`
-
-이 이미지들은 지금까지 진행한 실습 화면을 순서대로 기록한 자료입니다.
-
-정리 기준:
-- Counter 배포 및 조회
-- Counter 상태 변경
-- CounterNumber 값 변경
-- Faucet 배포
-- Faucet 입금
-- Faucet 출금
-- Faucet owner 회수 및 상태 확인
-
-## 제출용 요약
-이번 과제에서는 5주차 프레젠테이션 범위에 맞춰 `Counter.sol`, `CounterNumber.sol`, `Faucet.sol`을 실습했고, 시뮬레이터 화면과 실행 과정을 캡처하여 함께 정리했습니다.
-
-주요 확인 사항:
-- 상태 변수 읽기와 변경
-- `public` / `private`
-- getter / setter
-- `payable`
-- `owner` 권한 제어
-- 출금 제한 시간과 잔액 검증
-
-## 폴더 구성
+## 📎 파일 구조
 ```text
-week5/
-├─ CombinedContract.sol
-├─ CounterNumber.sol
-├─ Faucet.sol
-├─ lab1.html
-├─ README.md
-├─ image.png
-├─ image2.png
-├─ image3.png
-├─ image4.png
-├─ image5.png
-├─ image6.png
-├─ image7.png
-├─ image8.png
-├─ image9.png
-├─ image10.png
-├─ image11.png
-├─ image12.png
-├─ image13.png
-├─ image14.png
-└─ image15.png
+lab1.html
+README.md
+screenshot.png
 ```
+
+## ✅ 결론
+Solidity의 상태 변수 접근 방식(public/private)과 getter/setter 개념을 실습으로 이해하는 것이 목표입니다.
+
+---
+
+## 📚 추가 실습 정리
+아래 이미지는 이번 채팅에서 진행한 실습 과정을 정리한 캡처입니다.
+
+### 1. Counter.sol 배포 화면
+![Counter 실습 1](image2.png)
+
+`Counter.sol`을 선택하고 컴파일 및 배포를 진행한 화면입니다.  
+배포가 완료되면 오른쪽 패널에 컨트랙트 주소와 상태값 표시 영역이 생성되는 것을 확인했습니다.
+
+### 2. Counter.sol 함수 확인
+![Counter 실습 2](image3.png)
+
+`counter()`와 `get()` 같은 읽기 함수, `count()` 같은 상태 변경 함수를 구분해서 확인했습니다.  
+읽기 함수와 상태 변경 함수가 서로 다른 역할을 가진다는 점을 실습으로 확인했습니다.
+
+### 3. Counter.sol 상태 증가 결과
+![Counter 실습 3](image4.png)
+
+`count()`를 실행한 뒤 카운터 값이 증가한 화면입니다.  
+이 과정을 통해 배포 후 상태값이 실제로 변경된다는 점을 확인했습니다.
+
+### 4. CounterNumber.sol 초기값 조회
+![CounterNumber 실습 1](image5.png)
+
+`CounterNumber.sol`에서 숫자 상태 변수의 초기값을 조회한 화면입니다.  
+getter 함수로 현재 값을 확인하는 흐름을 실습했습니다.
+
+### 5. CounterNumber.sol 값 변경
+![CounterNumber 실습 2](image6.png)
+
+새 숫자를 입력한 뒤 `setNumber()`를 실행하고, 다시 `getNumber()`로 변경 결과를 확인했습니다.  
+`private` 변수와 getter / setter 구조를 직접 사용하는 흐름을 이해했습니다.
+
+### 6. Faucet.sol 배포
+![Faucet 실습 1](image7.png)
+
+`Faucet.sol`을 컴파일하고 배포한 화면입니다.  
+배포 당시 선택한 계정이 자동으로 `owner`가 되는 구조를 확인했습니다.
+
+### 7. Faucet 핵심 상태 확인
+![Faucet 실습 2](image8.png)
+
+`owner`, `WITHDRAWAL_AMOUNT`, `LOCK_TIME`, `lastWithdrawalTime` 등 Faucet의 핵심 상태를 확인했습니다.  
+이 구조를 통해 owner 권한과 출금 제한이 어떻게 연결되는지 이해했습니다.
+
+### 8. Faucet 입금 흐름
+![Faucet 실습 3](image9.png)
+
+`deposit()` 또는 `receive()`를 통해 컨트랙트 잔액을 먼저 채우는 과정을 확인했습니다.  
+입금이 먼저 되어야 이후 `withdraw()`가 가능하다는 점을 정리했습니다.
+
+### 9. Faucet 출금 흐름
+![Faucet 실습 4](image10.png)
+
+`withdraw()`를 실행해 0.1 ETH가 출금되는 흐름을 확인했습니다.  
+출금 후에는 컨트랙트 잔액이 줄어드는 구조를 실습했습니다.
+
+### 10. Faucet 시간 제한 확인
+![Faucet 실습 5](image11.png)
+
+출금 직후 다시 `withdraw()`를 시도하면 바로 성공하지 않는 구조를 확인했습니다.  
+이 과정을 통해 `LOCK_TIME = 1 days`의 의미를 확인했습니다.
+
+### 11. Faucet owner 개념 확인
+![Faucet 실습 6](image12.png)
+
+`withdrawAll()`은 owner 계정에서만 성공해야 하므로, 배포 시 선택한 계정이 중요하다는 점을 확인했습니다.  
+즉, owner 권한 제어가 Faucet의 핵심 보안 요소라는 점을 정리했습니다.
+
+### 12. Faucet 권한 차이 확인
+![Faucet 실습 7](image13.png)
+
+일반 계정과 owner 계정이 서로 다른 권한을 가진다는 점을 확인했습니다.  
+`withdraw()`와 `withdrawAll()`의 차이를 비교하면서 권한 제어를 이해했습니다.
+
+### 13. Faucet 회수 이후 상태 확인
+![Faucet 실습 8](image14.png)
+
+전액 회수 이후 컨트랙트 잔액이 줄어들거나 0이 되는 상태를 기준으로 결과를 확인했습니다.  
+`withdrawAll()`의 목적이 faucet에 남은 자금을 owner가 회수하는 것이라는 점을 확인했습니다.
+
+### 14. Faucet 전체 흐름 정리
+![Faucet 실습 9](image15.png)
+
+마지막으로 `배포 -> 입금 -> 출금 -> owner 회수`의 전체 흐름을 다시 정리했습니다.  
+이번 과제에서는 이 과정을 시뮬레이터와 Solidity 코드 파일을 함께 사용해 실습했습니다.
