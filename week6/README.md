@@ -61,12 +61,12 @@ Remix의 `Deploy & Run Transactions`에서 `Browser Extension - MetaMask` 환경
 
 ![img_1](img_1.png)
 
-### 5-3. owner 입금 완료 확인
-MetaMask에서 트랜잭션을 승인하면 Sepolia 네트워크에서 `deposit()` 요청 창이 나타나고, 이 트랜잭션을 통해 Faucet 컨트랙트에 ETH가 실제로 전송된다.
+### 5-3. owner 입금 트랜잭션 요청
+MetaMask에서 트랜잭션을 승인하면 Sepolia 네트워크에서 `deposit()` 요청 창이 나타나고, 이 트랜잭션을 통해 Faucet 컨트랙트에 ETH가 실제로 전송된다. Faucet에서 ETH를 지급하려면 먼저 owner가 ETH를 충전해야 하므로, 입금 금액을 입력하고 `deposit()`을 실행하였다. 실행 직후 페이지에는 `deposit(0.01 ETH)` 트랜잭션 전송 메시지가 표시된다.
 
 ![img_2](img_2.png)
-### 5-3. owner 입금 트랜잭션 요청
-Faucet에서 ETH를 지급하려면 먼저 owner가 ETH를 충전해야 하므로, 입금 금액을 입력하고 `deposit()`을 실행하였다. 실행 직후 페이지에는 `deposit(0.01 ETH)` 트랜잭션 전송 메시지가 표시되고, MetaMask 활동 내역에서도 입금 요청이 대기 중인 상태를 확인할 수 있었다.
+### 5-4. deposit()이후 대기
+MetaMask 활동 내역에서도 입금 요청이 대기 중인 상태를 확인할 수 있었다.
 
 ![img_7](img_7.png)
 
