@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 6 Faucet DApp</title>
+<script>
+  (function () {
+    var sources = [
+      "https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js",
+      "https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"
+    ];
+    var index = 0;
+
+    function loadNext() {
+      if (index >= sources.length) return;
+
+      var script = document.createElement("script");
+      script.src = sources[index];
+      script.async = false;
+      script.onload = function () {
+        window.__ethersLoaded = true;
+      };
+      script.onerror = function () {
+        index += 1;
+        loadNext();
+      };
+      document.head.appendChild(script);
+    }
+
+    loadNext();
+  })();
+</script>
+<style>
+  :root {
+    --bg: #f5eee2;
+    --panel: rgba(255, 250, 244, 0.96);
+    --line: #dac3a4;
+    --text: #2d241d;
+    --muted: #736254;
+    --accent: #b65c20;
+    --accent-2: #d57d2c;
+    --good: #166a42;
+    --warn: #9b3412;
+    --shadow: 0 22px 48px rgba(94, 57, 28, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(circle at top left, rgba(245, 197, 130, 0.5), transparent 28%),
+      linear-gradient(180deg, #fbf4e7 0%, #f5eee2 48%, #ecdfcf 100%);
+    min-height: 100vh;
+  }
+
+  .shell {
+    width: min(1120px, calc(100% - 28px));
+    margin: 24px auto 40px;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, rgba(255, 250, 244, 0.98), rgba(245, 228, 205, 0.96));
+    border: 1px solid rgba(182, 92, 32, 0.16);
+    border-radius: 28px;
+    padding: 28px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    right: -40px;
+    top: -55px;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(182, 92, 32, 0.16), transparent 68%);
+    pointer-events: none;
+  }
+
+  .tag {
+    display: inline-flex;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(182, 92, 32, 0.08);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  h1 {
+    margin: 18px 0 10px;
+    font-size: clamp(34px, 5vw, 56px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .hero p,
+  .note,
+  .meta,
+  .list {
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 18px;
+    margin-top: 18px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid rgba(115, 98, 84, 0.16);
+    border-radius: 24px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+  }
+
+  .panel h2 {
+    margin: 0 0 14px;
+    font-size: 22px;
+  }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  button {
+    border: none;
+    border-radius: 16px;
+    padding: 13px 18px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+
+  button:hover { transform: translateY(-1px); }
+  button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+  .primary {
+    background: linear-gradient(135deg, var(--accent-2), var(--accent));
+    color: #fff;
+  }
+
+  .secondary {
+    background: #fff5e8;
+    color: var(--accent);
+    border: 1px solid rgba(182, 92, 32, 0.16);
+  }
+
+  .ghost {
+    background: #fffdfa;
+    color: var(--text);
+    border: 1px solid rgba(115, 98, 84, 0.18);
+  }
+
+  .danger {
+    background: linear-gradient(135deg, #ef8b5b, #d65d1f);
+    color: #fff;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .stat,
+  .status,
+  .box,
+  .chart-wrap {
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.88);
+  }
+
+  .stat {
+    border-radius: 18px;
+    padding: 15px;
+  }
+
+  .stat-label {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+    font-weight: 800;
+    word-break: break-word;
+  }
+
+  .status,
+  .box {
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin-top: 16px;
+  }
+
+  .field {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .field label {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  input {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 13px;
+    color: var(--text);
+  }
+
+  .mono {
+    font-family: Consolas, "Courier New", monospace;
+  }
+
+  .chart-wrap {
+    margin-top: 18px;
+    border-radius: 22px;
+    overflow: hidden;
+  }
+
+  canvas {
+    width: 100%;
+    height: 240px;
+    display: block;
+    background:
+      linear-gradient(180deg, rgba(243, 199, 146, 0.22), transparent 56%),
+      #fffdfa;
+  }
+
+  .box a {
+    color: var(--warn);
+    word-break: break-all;
+    font-weight: 700;
+  }
+
+  .ok { color: var(--good); }
+  .warn { color: var(--warn); }
+
+  @media (max-width: 920px) {
+    .grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr; }
+    .shell { width: min(100% - 18px, 1120px); }
+    .hero, .panel { padding: 18px; border-radius: 20px; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="tag">Week 6 Sepolia Faucet DApp</div>
+      <h1>MetaMask를 연결하고<br>테스트 ETH를 요청하세요.</h1>
+      <p>
+        이 페이지는 Sepolia에 배포된 Faucet 컨트랙트와 실제로 연결됩니다.
+        MetaMask 지갑 연결, 연결된 주소 표시, Faucet 잔액 조회, 0.01 ETH 요청,
+        트랜잭션 해시 링크, 그리고 보너스용 잔액 차트까지 포함되어 있습니다.
+      </p>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">요청 금액</div>
+          <div class="stat-value">0.01 ETH</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">필수 네트워크</div>
+          <div class="stat-value">Sepolia</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>필수 기능</h2>
+        <div class="actions">
+          <button id="connectBtn" class="primary">MetaMask 연결</button>
+          <button id="refreshBtn" class="ghost">잔액 새로고침</button>
+          <button id="claimBtn" class="secondary" disabled>0.01 ETH 요청</button>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">연결된 지갑 주소</div>
+            <div class="stat-value mono" id="walletAddress">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Faucet 잔액</div>
+            <div class="stat-value" id="faucetBalance">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">요청 금액</div>
+            <div class="stat-value">0.01 ETH</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">네트워크 상태</div>
+            <div class="stat-value" id="networkStatus">지갑 미연결</div>
+          </div>
+        </div>
+
+        <div class="status" id="statusBox">
+          <strong>설정 필요:</strong> 아래 코드의 <code>CONFIG.contractAddress</code>를
+          Sepolia에 배포한 Faucet 주소로 바꿔주세요.
+        </div>
+
+        <div class="box">
+          <div class="note">트랜잭션 해시</div>
+          <div class="mono" id="txHash">아직 요청 기록이 없습니다.</div>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="balanceChart" width="760" height="240"></canvas>
+        </div>
+        <div class="meta" id="chartCaption">아직 Faucet 잔액 기록이 없습니다.</div>
+      </section>
+
+      <section class="panel">
+        <h2>보조 정보</h2>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">컨트랙트 주소</div>
+            <div class="stat-value mono" id="contractAddressView">미설정</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Owner 주소</div>
+            <div class="stat-value mono" id="ownerAddress">-</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="depositAmount">owner 입금 금액 (ETH)</label>
+          <input id="depositAmount" type="number" min="0" step="0.001" placeholder="예: 0.05">
+        </div>
+
+        <div class="actions">
+          <button id="depositBtn" class="secondary" disabled>`deposit()` 실행</button>
+          <button id="withdrawAllBtn" class="danger" disabled>`withdrawAll()` 실행</button>
+        </div>
+
+        <div class="box">
+          <div class="note">안내</div>
+          <div class="meta">
+            필수 과제는 MetaMask 연결, 지갑 주소 표시, Faucet 잔액 표시, 0.01 ETH 요청,
+            클릭 가능한 트랜잭션 해시 표시입니다.
+            아래 owner 기능과 차트는 확인용/보너스용으로 같이 넣어두었습니다.
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+  const TEXT = {
+    metamaskMissing: "\uBA54\uD0C0\uB9C8\uC2A4\uD06C\uAC00 \uC124\uCE58\uB418\uC5B4 \uC788\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.",
+    addressNeeded: "\uBA3C\uC800 CONFIG.contractAddress\uC5D0 Sepolia \uBC30\uD3EC \uC8FC\uC18C\uB97C \uC785\uB825\uD574\uC8FC\uC138\uC694.",
+    wrongNetwork: "\uB2E4\uB978 \uB124\uD2B8\uC6CC\uD06C",
+    switchNetwork: "MetaMask\uB97C ",
+    switchNetworkTail: " \uB124\uD2B8\uC6CC\uD06C\uB85C \uC804\uD658\uD574\uC8FC\uC138\uC694.",
+    connected: " \uC5F0\uACB0\uB428",
+    chartEmpty: "\uC794\uC561 \uAE30\uB85D\uC774 \uC313\uC774\uBA74 \uC5EC\uAE30\uC5D0 \uCC28\uD2B8\uAC00 \uD45C\uC2DC\uB429\uB2C8\uB2E4.",
+    chartCaption: "\uCD5C\uADFC Faucet \uC794\uC561 \uAE30\uB85D ",
+    connectDone: "MetaMask \uC5F0\uACB0 \uC644\uB8CC: ",
+    connectFail: "MetaMask \uC5F0\uACB0 \uC2E4\uD328",
+    txSending: "\uD2B8\uB79C\uC7AD\uC158 \uC804\uC1A1 \uC911...",
+    withdrawSent: "withdraw() \uD2B8\uB79C\uC7AD\uC158\uC744 \uC804\uC1A1\uD588\uC2B5\uB2C8\uB2E4. \uBE14\uB85D \uD655\uC815\uC744 \uAE30\uB2E4\uB9AC\uB294 \uC911\uC785\uB2C8\uB2E4.",
+    claimDone: " ETH \uC694\uCCAD\uC774 \uC644\uB8CC\uB418\uC5C8\uC2B5\uB2C8\uB2E4.",
+    claimFail: "\uC694\uCCAD \uC2E4\uD328",
+    depositNeedAmount: "\uC785\uAE08 \uAE08\uC561\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694.",
+    depositSentA: "deposit(",
+    depositSentB: " ETH) \uD2B8\uB79C\uC7AD\uC158\uC744 \uC804\uC1A1\uD588\uC2B5\uB2C8\uB2E4.",
+    depositDone: "owner \uC785\uAE08\uC774 \uC644\uB8CC\uB418\uC5C8\uC2B5\uB2C8\uB2E4.",
+    depositFail: "deposit \uC2E4\uD328",
+    withdrawAllSent: "withdrawAll() \uD2B8\uB79C\uC7AD\uC158\uC744 \uC804\uC1A1\uD588\uC2B5\uB2C8\uB2E4.",
+    withdrawAllDone: "owner\uAC00 Faucet \uC794\uC561 \uC804\uCCB4\uB97C \uD68C\uC218\uD588\uC2B5\uB2C8\uB2E4.",
+    withdrawAllFail: "withdrawAll \uC2E4\uD328",
+    addressUnset: "\uBC30\uD3EC \uC8FC\uC18C \uC785\uB825 \uD544\uC694",
+    ethersMissing: "ethers.js \uB85C\uB4DC\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4. \uB124\uD2B8\uC6CC\uD06C\uB97C \uD655\uC778\uD558\uACE0 \uC0C8\uB85C\uACE0\uCE68\uD574\uC8FC\uC138\uC694.",
+    switchingNetwork: "Sepolia \uB124\uD2B8\uC6CC\uD06C\uB85C \uC804\uD658 \uC694\uCCAD \uC911\uC785\uB2C8\uB2E4.",
+    switchRejected: "\uB124\uD2B8\uC6CC\uD06C \uC804\uD658\uC744 \uC9C1\uC811 \uD655\uC778\uD574\uC8FC\uC138\uC694."
+  };
+
+  const CONFIG = {
+    contractAddress: "0x660F92b238A173312428898CA55aBAf0A190FD07",
+    chainId: 11155111,
+    chainName: "Sepolia",
+    explorerBaseUrl: "https://sepolia.etherscan.io/tx/",
+    requestAmountEth: "0.01",
+    abi: [
+      "function owner() view returns (address)",
+      "function getBalance() view returns (uint256)",
+      "function withdraw() external",
+      "function deposit() external payable",
+      "function withdrawAll() external",
+      "function WITHDRAWAL_AMOUNT() view returns (uint256)"
+    ]
+  };
+
+  let provider;
+  let signer;
+  let contract;
+  let currentAccount = "";
+  const balanceHistory = [];
+
+  const connectBtn = document.getElementById("connectBtn");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const claimBtn = document.getElementById("claimBtn");
+  const depositBtn = document.getElementById("depositBtn");
+  const withdrawAllBtn = document.getElementById("withdrawAllBtn");
+  const depositAmountEl = document.getElementById("depositAmount");
+
+  const walletAddressEl = document.getElementById("walletAddress");
+  const faucetBalanceEl = document.getElementById("faucetBalance");
+  const networkStatusEl = document.getElementById("networkStatus");
+  const statusBoxEl = document.getElementById("statusBox");
+  const txHashEl = document.getElementById("txHash");
+  const chartCaptionEl = document.getElementById("chartCaption");
+  const contractAddressViewEl = document.getElementById("contractAddressView");
+  const ownerAddressEl = document.getElementById("ownerAddress");
+
+  function getMetaMaskProvider() {
+    if (!window.ethereum) return null;
+
+    if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
+      const providers = window.ethereum.providers.filter(function (item) {
+        return !!item;
+      });
+
+      const exactSepolia = providers.find(function (item) {
+        return item.isMetaMask && String(item.chainId || "").toLowerCase() === "0xaa36a7";
+      });
+      if (exactSepolia) return exactSepolia;
+
+      const exactMetaMask = providers.find(function (item) {
+        const rdns = item.providerInfo && item.providerInfo.rdns ? item.providerInfo.rdns : "";
+        return item.isMetaMask || rdns.indexOf("metamask") >= 0;
+      });
+      if (exactMetaMask) return exactMetaMask;
+
+      if (providers.length === 1) return providers[0];
+    }
+
+    if (window.ethereum.isMetaMask) return window.ethereum;
+
+    return null;
+  }
+
+  function shortenAddress(address) {
+    if (!address || address.length < 10) return address || "-";
+    return address.slice(0, 8) + "..." + address.slice(-6);
+  }
+
+  function setStatus(message, tone) {
+    const className = tone === "ok" ? "ok" : tone === "warn" ? "warn" : "";
+    statusBoxEl.innerHTML = '<span class="' + className + '">' + message + "</span>";
+  }
+
+  function hasValidAddress() {
+    if (!window.ethers || !window.ethers.utils) return false;
+    return window.ethers.utils.isAddress(CONFIG.contractAddress);
+  }
+
+  function setButtonsDisabled(disabled) {
+    claimBtn.disabled = disabled;
+    depositBtn.disabled = disabled;
+    withdrawAllBtn.disabled = disabled;
+  }
+
+  async function ensureSepolia(metaMaskProvider) {
+    const chainIdHex = await metaMaskProvider.request({ method: "eth_chainId" });
+    const chainId = parseInt(chainIdHex, 16);
+
+    if (chainId !== CONFIG.chainId) {
+      networkStatusEl.textContent = TEXT.wrongNetwork + " (" + chainIdHex + ")";
+
+      try {
+        setStatus(TEXT.switchingNetwork);
+        await metaMaskProvider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0xaa36a7" }]
+        });
+      } catch (switchError) {
+        throw new Error(TEXT.switchNetwork + CONFIG.chainName + TEXT.switchNetworkTail + " / " + TEXT.switchRejected);
+      }
+
+      const afterSwitchHex = await metaMaskProvider.request({ method: "eth_chainId" });
+      const afterSwitchId = parseInt(afterSwitchHex, 16);
+      if (afterSwitchId !== CONFIG.chainId) {
+        networkStatusEl.textContent = TEXT.wrongNetwork + " (" + afterSwitchHex + ")";
+        throw new Error(TEXT.switchNetwork + CONFIG.chainName + TEXT.switchNetworkTail);
+      }
+    }
+
+    networkStatusEl.textContent = CONFIG.chainName + TEXT.connected;
+  }
+
+  function pushBalancePoint(balanceEth) {
+    balanceHistory.push({
+      label: new Date().toLocaleTimeString("ko-KR", { hour12: false }),
+      value: Number(balanceEth)
+    });
+
+    if (balanceHistory.length > 10) {
+      balanceHistory.shift();
+    }
+
+    drawChart();
+  }
+
+  function drawChart() {
+    const canvas = document.getElementById("balanceChart");
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#fffdfa";
+    ctx.fillRect(0, 0, width, height);
+
+    if (balanceHistory.length === 0) {
+      ctx.fillStyle = "#736254";
+      ctx.font = "16px Segoe UI";
+      ctx.fillText(TEXT.chartEmpty, 24, 40);
+      return;
+    }
+
+    const padding = 36;
+    const chartWidth = width - padding * 2;
+    const chartHeight = height - padding * 2;
+    const maxValue = Math.max.apply(null, balanceHistory.map(function (item) { return item.value; }).concat([0.01]));
+
+    ctx.strokeStyle = "rgba(115, 98, 84, 0.20)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i += 1) {
+      const y = padding + (chartHeight / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(padding, y);
+      ctx.lineTo(width - padding, y);
+      ctx.stroke();
+    }
+
+    const points = balanceHistory.map(function (item, index) {
+      const x = padding + (chartWidth / Math.max(balanceHistory.length - 1, 1)) * index;
+      const y = padding + chartHeight - (item.value / maxValue) * chartHeight;
+      return { x: x, y: y, label: item.label };
+    });
+
+    const gradient = ctx.createLinearGradient(0, padding, 0, height - padding);
+    gradient.addColorStop(0, "rgba(213, 125, 44, 0.30)");
+    gradient.addColorStop(1, "rgba(213, 125, 44, 0.03)");
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, height - padding);
+    points.forEach(function (point) { ctx.lineTo(point.x, point.y); });
+    ctx.lineTo(points[points.length - 1].x, height - padding);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    ctx.beginPath();
+    points.forEach(function (point, index) {
+      if (index === 0) ctx.moveTo(point.x, point.y);
+      else ctx.lineTo(point.x, point.y);
+    });
+    ctx.strokeStyle = "#b65c20";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    points.forEach(function (point) {
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#b65c20";
+      ctx.fill();
+    });
+
+    ctx.fillStyle = "#736254";
+    ctx.font = "12px Segoe UI";
+    ctx.fillText("Max " + maxValue.toFixed(4) + " ETH", padding, 20);
+    ctx.fillText(points[points.length - 1].label, width - padding - 60, height - 12);
+
+    chartCaptionEl.textContent = TEXT.chartCaption + "(" + balanceHistory.length + "\uAC1C \uC9C0\uC810)";
+  }
+
+  async function refreshData() {
+    if (!contract) return;
+
+    const results = await Promise.all([
+      contract.getBalance(),
+      contract.owner()
+    ]);
+
+    const balanceEth = window.ethers.utils.formatEther(results[0]);
+    faucetBalanceEl.textContent = Number(balanceEth).toFixed(4) + " ETH";
+    ownerAddressEl.textContent = results[1];
+    contractAddressViewEl.textContent = CONFIG.contractAddress;
+    pushBalancePoint(balanceEth);
+  }
+
+  async function connectWallet() {
+    if (!window.ethers || !window.ethers.providers) {
+      setStatus(TEXT.ethersMissing, "warn");
+      return;
+    }
+
+    const metaMaskProvider = getMetaMaskProvider();
+
+    if (!metaMaskProvider) {
+      setStatus(TEXT.metamaskMissing, "warn");
+      return;
+    }
+
+    if (!hasValidAddress()) {
+      setStatus(TEXT.addressNeeded, "warn");
+      return;
+    }
+
+    try {
+      provider = new window.ethers.providers.Web3Provider(metaMaskProvider, "any");
+      await provider.send("eth_requestAccounts", []);
+      await ensureSepolia(metaMaskProvider);
+
+      signer = provider.getSigner();
+      currentAccount = await signer.getAddress();
+      contract = new window.ethers.Contract(CONFIG.contractAddress, CONFIG.abi, signer);
+
+      walletAddressEl.textContent = currentAccount;
+      setButtonsDisabled(false);
+      setStatus(TEXT.connectDone + shortenAddress(currentAccount), "ok");
+      await refreshData();
+    } catch (error) {
+      setButtonsDisabled(true);
+      setStatus(error.data && error.data.message ? error.data.message : error.reason || error.message || TEXT.connectFail, "warn");
+    }
+  }
+
+  async function claimEth() {
+    if (!contract) return;
+
+    try {
+      claimBtn.disabled = true;
+      txHashEl.textContent = TEXT.txSending;
+      setStatus(TEXT.withdrawSent);
+
+      const tx = await contract.withdraw();
+      txHashEl.innerHTML = '<a href="' + CONFIG.explorerBaseUrl + tx.hash + '" target="_blank" rel="noreferrer">' + tx.hash + "</a>";
+
+      await tx.wait();
+      setStatus(CONFIG.requestAmountEth + TEXT.claimDone, "ok");
+      await refreshData();
+    } catch (error) {
+      setStatus(error.data && error.data.message ? error.data.message : error.reason || error.message || TEXT.claimFail, "warn");
+    } finally {
+      claimBtn.disabled = false;
+    }
+  }
+
+  async function depositEth() {
+    if (!contract) return;
+
+    const amount = depositAmountEl.value.trim();
+    if (!amount || Number(amount) <= 0) {
+      setStatus(TEXT.depositNeedAmount, "warn");
+      return;
+    }
+
+    try {
+      depositBtn.disabled = true;
+      const tx = await contract.deposit({ value: window.ethers.utils.parseEther(amount) });
+      txHashEl.innerHTML = '<a href="' + CONFIG.explorerBaseUrl + tx.hash + '" target="_blank" rel="noreferrer">' + tx.hash + "</a>";
+      setStatus(TEXT.depositSentA + amount + TEXT.depositSentB);
+      await tx.wait();
+      setStatus(TEXT.depositDone, "ok");
+      depositAmountEl.value = "";
+      await refreshData();
+    } catch (error) {
+      setStatus(error.data && error.data.message ? error.data.message : error.reason || error.message || TEXT.depositFail, "warn");
+    } finally {
+      depositBtn.disabled = false;
+    }
+  }
+
+  async function withdrawAllEth() {
+    if (!contract) return;
+
+    try {
+      withdrawAllBtn.disabled = true;
+      const tx = await contract.withdrawAll();
+      txHashEl.innerHTML = '<a href="' + CONFIG.explorerBaseUrl + tx.hash + '" target="_blank" rel="noreferrer">' + tx.hash + "</a>";
+      setStatus(TEXT.withdrawAllSent);
+      await tx.wait();
+      setStatus(TEXT.withdrawAllDone, "ok");
+      await refreshData();
+    } catch (error) {
+      setStatus(error.data && error.data.message ? error.data.message : error.reason || error.message || TEXT.withdrawAllFail, "warn");
+    } finally {
+      withdrawAllBtn.disabled = false;
+    }
+  }
+
+  function attachWalletEvents() {
+    const metaMaskProvider = getMetaMaskProvider();
+    if (!metaMaskProvider) return;
+    metaMaskProvider.on("accountsChanged", function () { location.reload(); });
+    metaMaskProvider.on("chainChanged", function () { location.reload(); });
+  }
+
+  function initializePage() {
+    if (!window.ethers || !window.ethers.utils) {
+      contractAddressViewEl.textContent = CONFIG.contractAddress;
+      setStatus(TEXT.ethersMissing, "warn");
+      return false;
+    }
+
+    contractAddressViewEl.textContent = hasValidAddress() ? CONFIG.contractAddress : TEXT.addressUnset;
+    return true;
+  }
+
+  connectBtn.addEventListener("click", connectWallet);
+  refreshBtn.addEventListener("click", refreshData);
+  claimBtn.addEventListener("click", claimEth);
+  depositBtn.addEventListener("click", depositEth);
+  withdrawAllBtn.addEventListener("click", withdrawAllEth);
+
+  drawChart();
+  attachWalletEvents();
+  initializePage();
+  setTimeout(initializePage, 1000);
+  setTimeout(initializePage, 2500);
+</script>
+</body>
+</html>
