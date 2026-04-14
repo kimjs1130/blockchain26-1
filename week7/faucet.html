@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 7 Staking Simulator</title>
+<script>
+  (function () {
+    var sources = [
+      "https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js",
+      "https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"
+    ];
+    var index = 0;
+
+    function loadNext() {
+      if (index >= sources.length) return;
+
+      var script = document.createElement("script");
+      script.src = sources[index];
+      script.async = false;
+      script.onload = function () {
+        window.__ethersLoaded = true;
+      };
+      script.onerror = function () {
+        index += 1;
+        loadNext();
+      };
+      document.head.appendChild(script);
+    }
+
+    loadNext();
+  })();
+</script>
+<style>
+  :root {
+    --bg: #f5eee2;
+    --panel: rgba(255, 250, 244, 0.96);
+    --line: #dac3a4;
+    --text: #2d241d;
+    --muted: #736254;
+    --accent: #b65c20;
+    --accent-2: #d57d2c;
+    --good: #166a42;
+    --warn: #9b3412;
+    --shadow: 0 22px 48px rgba(94, 57, 28, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(circle at top left, rgba(245, 197, 130, 0.5), transparent 28%),
+      linear-gradient(180deg, #fbf4e7 0%, #f5eee2 48%, #ecdfcf 100%);
+    min-height: 100vh;
+  }
+
+  .shell {
+    width: min(1120px, calc(100% - 28px));
+    margin: 24px auto 40px;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, rgba(255, 250, 244, 0.98), rgba(245, 228, 205, 0.96));
+    border: 1px solid rgba(182, 92, 32, 0.16);
+    border-radius: 28px;
+    padding: 28px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    right: -40px;
+    top: -55px;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(182, 92, 32, 0.16), transparent 68%);
+    pointer-events: none;
+  }
+
+  .tag {
+    display: inline-flex;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(182, 92, 32, 0.08);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  h1 {
+    margin: 18px 0 10px;
+    font-size: clamp(34px, 5vw, 56px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .hero p,
+  .note,
+  .meta {
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1.08fr 0.92fr;
+    gap: 18px;
+    margin-top: 18px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid rgba(115, 98, 84, 0.16);
+    border-radius: 24px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+  }
+
+  .panel h2 {
+    margin: 0 0 14px;
+    font-size: 22px;
+  }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  button {
+    border: none;
+    border-radius: 16px;
+    padding: 13px 18px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+
+  button:hover { transform: translateY(-1px); }
+  button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+  .primary {
+    background: linear-gradient(135deg, var(--accent-2), var(--accent));
+    color: #fff;
+  }
+
+  .secondary {
+    background: #fff5e8;
+    color: var(--accent);
+    border: 1px solid rgba(182, 92, 32, 0.16);
+  }
+
+  .ghost {
+    background: #fffdfa;
+    color: var(--text);
+    border: 1px solid rgba(115, 98, 84, 0.18);
+  }
+
+  .danger {
+    background: linear-gradient(135deg, #ef8b5b, #d65d1f);
+    color: #fff;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .stat,
+  .status,
+  .box,
+  .chart-wrap {
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.88);
+  }
+
+  .stat {
+    border-radius: 18px;
+    padding: 15px;
+  }
+
+  .stat-label {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+    font-weight: 800;
+    word-break: break-word;
+  }
+
+  .status,
+  .box {
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin-top: 16px;
+  }
+
+  .field {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .field label {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  input {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 13px;
+    color: var(--text);
+  }
+
+  .mono {
+    font-family: Consolas, "Courier New", monospace;
+  }
+
+  .chart-wrap {
+    margin-top: 18px;
+    border-radius: 22px;
+    overflow: hidden;
+  }
+
+  canvas {
+    width: 100%;
+    height: 240px;
+    display: block;
+    background:
+      linear-gradient(180deg, rgba(243, 199, 146, 0.22), transparent 56%),
+      #fffdfa;
+  }
+
+  .box a {
+    color: var(--warn);
+    word-break: break-all;
+    font-weight: 700;
+  }
+
+  .ok { color: var(--good); }
+  .warn { color: var(--warn); }
+
+  @media (max-width: 920px) {
+    .grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr; }
+    .shell { width: min(100% - 18px, 1120px); }
+    .hero, .panel { padding: 18px; border-radius: 20px; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="tag">Week 7 ERC-20 Staking Simulator</div>
+      <h1>MetaMask를 연결하고<br>approve, stake, withdraw를 실행하세요.</h1>
+      <p>
+        이 페이지는 Sepolia에 배포한 ERC-20 토큰과 스테이킹 컨트랙트에 연결됩니다.
+        Week 6의 연결 흐름을 재사용하면서, 이번 과제에 맞게 approve, stake, withdraw,
+        staked balance 확인 기능으로 바꾼 시뮬레이터입니다.
+      </p>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">필수 테스트넷</div>
+          <div class="stat-value">Sepolia</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">필수 과제 흐름</div>
+          <div class="stat-value">Approve -> Stake -> Withdraw</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>실행 패널</h2>
+        <div class="actions">
+          <button id="connectBtn" class="primary">MetaMask 연결</button>
+          <button id="refreshBtn" class="ghost">상태 새로고침</button>
+        </div>
+
+        <div class="field">
+          <label for="tokenAddress">ERC-20 토큰 주소</label>
+          <input id="tokenAddress" class="mono" placeholder="0x...">
+        </div>
+
+        <div class="field">
+          <label for="stakingAddress">스테이킹 컨트랙트 주소</label>
+          <input id="stakingAddress" class="mono" placeholder="0x...">
+        </div>
+
+        <div class="field">
+          <label for="approveAmount">Approve / Stake / Withdraw 수량</label>
+          <input id="approveAmount" type="number" min="0" step="0.0001" placeholder="예: 10">
+        </div>
+
+        <div class="actions">
+          <button id="approveBtn" class="secondary" disabled>`approve()` 실행</button>
+          <button id="stakeBtn" class="secondary" disabled>`stake()` 실행</button>
+          <button id="withdrawBtn" class="danger" disabled>`withdraw()` 실행</button>
+          <button id="emergencyWithdrawBtn" class="ghost" disabled>`emergencyWithdraw()` 실행</button>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">연결된 지갑 주소</div>
+            <div class="stat-value mono" id="walletAddress">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">네트워크 상태</div>
+            <div class="stat-value" id="networkStatus">지갑 미연결</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">내 토큰 잔액</div>
+            <div class="stat-value" id="tokenBalance">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">내 스테이킹 잔액</div>
+            <div class="stat-value" id="stakedBalance">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">예상 보상</div>
+            <div class="stat-value" id="pendingReward">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">언락 시각</div>
+            <div class="stat-value" id="unlockTime">-</div>
+          </div>
+        </div>
+
+        <div class="status" id="statusBox">
+          <strong>설정 필요:</strong> 토큰 주소와 스테이킹 컨트랙트 주소를 입력한 뒤 MetaMask를 연결하세요.
+        </div>
+
+        <div class="box">
+          <div class="note">최근 트랜잭션 해시</div>
+          <div class="mono" id="txHash">아직 트랜잭션이 없습니다.</div>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="balanceChart" width="760" height="240"></canvas>
+        </div>
+        <div class="meta" id="chartCaption">아직 스테이킹 잔액 기록이 없습니다.</div>
+      </section>
+
+      <section class="panel">
+        <h2>조회 패널</h2>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">토큰 심볼</div>
+            <div class="stat-value" id="tokenSymbol">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">토큰 소수점</div>
+            <div class="stat-value" id="tokenDecimals">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">현재 Allowance</div>
+            <div class="stat-value" id="allowanceValue">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">컨트랙트 총 스테이킹</div>
+            <div class="stat-value" id="totalStaked">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">컨트랙트 토큰 잔액</div>
+            <div class="stat-value" id="contractTokenBalance">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">보상 풀</div>
+            <div class="stat-value" id="rewardPool">-</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Explorer 링크 기준</div>
+            <div class="stat-value">Sepolia Etherscan</div>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="note">과제 수행 순서</div>
+          <div class="meta">
+            1. Remix에서 ERC-20 토큰과 SimpleStaking을 배포합니다.<br>
+            2. 이 페이지에 두 주소를 입력합니다.<br>
+            3. MetaMask 연결 후 `approve()`를 먼저 실행합니다.<br>
+            4. 필요하면 owner 계정으로 `fundRewards()`를 먼저 실행합니다.<br>
+            5. `stake()`를 실행합니다.<br>
+            6. `pendingReward`, `unlockTime`, `totalStaked`를 확인합니다.<br>
+            7. 일반 출금은 락 해제 후 `withdraw()`를 실행합니다.<br>
+            8. 즉시 회수 테스트는 `emergencyWithdraw()`로 진행할 수 있습니다.
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+  const TEXT = {
+    metamaskMissing: "MetaMask가 설치되어 있지 않습니다.",
+    invalidAddress: "토큰 주소와 스테이킹 주소를 모두 올바르게 입력해주세요.",
+    wrongNetwork: "다른 네트워크",
+    switchNetwork: "MetaMask를 ",
+    switchNetworkTail: " 네트워크로 전환해주세요.",
+    connected: " 연결됨",
+    chartEmpty: "스테이킹 잔액 기록이 쌓이면 여기에 차트가 표시됩니다.",
+    chartCaption: "최근 스테이킹 잔액 기록 ",
+    connectDone: "MetaMask 연결 완료: ",
+    connectFail: "MetaMask 연결 실패",
+    txSending: "트랜잭션 전송 중...",
+    approveNeedAmount: "수량을 입력해주세요.",
+    approveSent: "approve() 트랜잭션을 전송했습니다.",
+    approveDone: "approve() 완료",
+    approveFail: "approve 실패",
+    stakeSent: "stake() 트랜잭션을 전송했습니다.",
+    stakeDone: "stake() 완료",
+    stakeFail: "stake 실패",
+    withdrawSent: "withdraw() 트랜잭션을 전송했습니다.",
+    withdrawDone: "withdraw() 완료",
+    withdrawFail: "withdraw 실패",
+    emergencyWithdrawSent: "emergencyWithdraw() 트랜잭션을 전송했습니다.",
+    emergencyWithdrawDone: "emergencyWithdraw() 완료",
+    emergencyWithdrawFail: "emergencyWithdraw 실패",
+    ethersMissing: "ethers.js 로드에 실패했습니다. 새로고침 후 다시 시도해주세요.",
+    switchingNetwork: "Sepolia 네트워크로 전환 요청 중입니다.",
+    switchRejected: "네트워크 전환을 MetaMask에서 직접 확인해주세요.",
+    refreshFirst: "먼저 지갑을 연결해주세요."
+  };
+
+  const CONFIG = {
+    defaultTokenAddress: "",
+    defaultStakingAddress: "",
+    chainId: 11155111,
+    chainIdHex: "0xaa36a7",
+    chainName: "Sepolia",
+    explorerBaseUrl: "https://sepolia.etherscan.io/tx/",
+    stakingAbi: [
+      "function stake(uint256 amount) external",
+      "function withdraw(uint256 amount) external",
+      "function emergencyWithdraw() external",
+      "function stakedBalance(address account) external view returns (uint256)",
+      "function pendingReward(address account) external view returns (uint256)",
+      "function unlockTime(address account) external view returns (uint256)",
+      "function totalStaked() external view returns (uint256)",
+      "function contractTokenBalance() external view returns (uint256)",
+      "function rewardPool() external view returns (uint256)",
+      "function stakingToken() external view returns (address)"
+    ],
+    erc20Abi: [
+      "function approve(address spender, uint256 amount) external returns (bool)",
+      "function allowance(address owner, address spender) external view returns (uint256)",
+      "function balanceOf(address account) external view returns (uint256)",
+      "function decimals() external view returns (uint8)",
+      "function symbol() external view returns (string)"
+    ]
+  };
+
+  let provider;
+  let signer;
+  let tokenContract;
+  let stakingContract;
+  let currentAccount = "";
+  let tokenDecimals = 18;
+  let tokenSymbol = "TOKEN";
+  const balanceHistory = [];
+
+  const connectBtn = document.getElementById("connectBtn");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const approveBtn = document.getElementById("approveBtn");
+  const stakeBtn = document.getElementById("stakeBtn");
+  const withdrawBtn = document.getElementById("withdrawBtn");
+  const emergencyWithdrawBtn = document.getElementById("emergencyWithdrawBtn");
+  const tokenAddressEl = document.getElementById("tokenAddress");
+  const stakingAddressEl = document.getElementById("stakingAddress");
+  const approveAmountEl = document.getElementById("approveAmount");
+
+  const walletAddressEl = document.getElementById("walletAddress");
+  const networkStatusEl = document.getElementById("networkStatus");
+  const tokenBalanceEl = document.getElementById("tokenBalance");
+  const stakedBalanceEl = document.getElementById("stakedBalance");
+  const pendingRewardEl = document.getElementById("pendingReward");
+  const unlockTimeEl = document.getElementById("unlockTime");
+  const statusBoxEl = document.getElementById("statusBox");
+  const txHashEl = document.getElementById("txHash");
+  const chartCaptionEl = document.getElementById("chartCaption");
+  const tokenSymbolEl = document.getElementById("tokenSymbol");
+  const tokenDecimalsEl = document.getElementById("tokenDecimals");
+  const allowanceValueEl = document.getElementById("allowanceValue");
+  const totalStakedEl = document.getElementById("totalStaked");
+  const contractTokenBalanceEl = document.getElementById("contractTokenBalance");
+  const rewardPoolEl = document.getElementById("rewardPool");
+
+  function getMetaMaskProvider() {
+    if (!window.ethereum) return null;
+
+    if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
+      const providers = window.ethereum.providers.filter(function (item) {
+        return !!item;
+      });
+
+      const exactMetaMask = providers.find(function (item) {
+        const rdns = item.providerInfo && item.providerInfo.rdns ? item.providerInfo.rdns : "";
+        return item.isMetaMask || rdns.indexOf("metamask") >= 0;
+      });
+      if (exactMetaMask) return exactMetaMask;
+
+      if (providers.length === 1) return providers[0];
+    }
+
+    if (window.ethereum.isMetaMask) return window.ethereum;
+    return null;
+  }
+
+  function setStatus(message, tone) {
+    const className = tone === "ok" ? "ok" : tone === "warn" ? "warn" : "";
+    statusBoxEl.innerHTML = '<span class="' + className + '">' + message + "</span>";
+  }
+
+  function shortenAddress(address) {
+    if (!address || address.length < 10) return address || "-";
+    return address.slice(0, 8) + "..." + address.slice(-6);
+  }
+
+  function isValidAddress(address) {
+    return !!window.ethers && !!window.ethers.utils && window.ethers.utils.isAddress(address);
+  }
+
+  function getAddresses() {
+    return {
+      tokenAddress: tokenAddressEl.value.trim(),
+      stakingAddress: stakingAddressEl.value.trim()
+    };
+  }
+
+  function hasValidAddresses() {
+    const addresses = getAddresses();
+    return isValidAddress(addresses.tokenAddress) && isValidAddress(addresses.stakingAddress);
+  }
+
+  function setButtonsDisabled(disabled) {
+    approveBtn.disabled = disabled;
+    stakeBtn.disabled = disabled;
+    withdrawBtn.disabled = disabled;
+    emergencyWithdrawBtn.disabled = disabled;
+  }
+
+  function getAmountValue() {
+    const value = approveAmountEl.value.trim();
+    if (!value || Number(value) <= 0) return null;
+    return value;
+  }
+
+  async function ensureSepolia(metaMaskProvider) {
+    const chainIdHex = await metaMaskProvider.request({ method: "eth_chainId" });
+    const chainId = parseInt(chainIdHex, 16);
+
+    if (chainId !== CONFIG.chainId) {
+      networkStatusEl.textContent = TEXT.wrongNetwork + " (" + chainIdHex + ")";
+
+      try {
+        setStatus(TEXT.switchingNetwork);
+        await metaMaskProvider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: CONFIG.chainIdHex }]
+        });
+      } catch (switchError) {
+        throw new Error(TEXT.switchNetwork + CONFIG.chainName + TEXT.switchNetworkTail + " / " + TEXT.switchRejected);
+      }
+    }
+
+    networkStatusEl.textContent = CONFIG.chainName + TEXT.connected;
+  }
+
+  function pushBalancePoint(balanceValue) {
+    balanceHistory.push({
+      label: new Date().toLocaleTimeString("ko-KR", { hour12: false }),
+      value: Number(balanceValue)
+    });
+
+    if (balanceHistory.length > 10) {
+      balanceHistory.shift();
+    }
+
+    drawChart();
+  }
+
+  function drawChart() {
+    const canvas = document.getElementById("balanceChart");
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#fffdfa";
+    ctx.fillRect(0, 0, width, height);
+
+    if (balanceHistory.length === 0) {
+      ctx.fillStyle = "#736254";
+      ctx.font = "16px Segoe UI";
+      ctx.fillText(TEXT.chartEmpty, 24, 40);
+      return;
+    }
+
+    const padding = 36;
+    const chartWidth = width - padding * 2;
+    const chartHeight = height - padding * 2;
+    const maxValue = Math.max.apply(null, balanceHistory.map(function (item) { return item.value; }).concat([1]));
+
+    ctx.strokeStyle = "rgba(115, 98, 84, 0.20)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i += 1) {
+      const y = padding + (chartHeight / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(padding, y);
+      ctx.lineTo(width - padding, y);
+      ctx.stroke();
+    }
+
+    const points = balanceHistory.map(function (item, index) {
+      const x = padding + (chartWidth / Math.max(balanceHistory.length - 1, 1)) * index;
+      const y = padding + chartHeight - (item.value / maxValue) * chartHeight;
+      return { x: x, y: y, label: item.label };
+    });
+
+    const gradient = ctx.createLinearGradient(0, padding, 0, height - padding);
+    gradient.addColorStop(0, "rgba(213, 125, 44, 0.30)");
+    gradient.addColorStop(1, "rgba(213, 125, 44, 0.03)");
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, height - padding);
+    points.forEach(function (point) { ctx.lineTo(point.x, point.y); });
+    ctx.lineTo(points[points.length - 1].x, height - padding);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    ctx.beginPath();
+    points.forEach(function (point, index) {
+      if (index === 0) ctx.moveTo(point.x, point.y);
+      else ctx.lineTo(point.x, point.y);
+    });
+    ctx.strokeStyle = "#b65c20";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    points.forEach(function (point) {
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#b65c20";
+      ctx.fill();
+    });
+
+    ctx.fillStyle = "#736254";
+    ctx.font = "12px Segoe UI";
+    ctx.fillText("Max " + maxValue.toFixed(4) + " " + tokenSymbol, padding, 20);
+    ctx.fillText(points[points.length - 1].label, width - padding - 60, height - 12);
+    chartCaptionEl.textContent = TEXT.chartCaption + "(" + balanceHistory.length + "개 지점)";
+  }
+
+  function formatTokenAmount(rawValue) {
+    return Number(window.ethers.utils.formatUnits(rawValue, tokenDecimals)).toFixed(4) + " " + tokenSymbol;
+  }
+
+  function renderTxHash(hash) {
+    txHashEl.innerHTML = '<a href="' + CONFIG.explorerBaseUrl + hash + '" target="_blank" rel="noreferrer">' + hash + "</a>";
+  }
+
+  function formatUnlockTime(unixTime) {
+    if (!unixTime || String(unixTime) === "0") return "-";
+    return new Date(Number(unixTime) * 1000).toLocaleString("ko-KR");
+  }
+
+  async function buildContracts() {
+    const addresses = getAddresses();
+    tokenContract = new window.ethers.Contract(addresses.tokenAddress, CONFIG.erc20Abi, signer);
+    stakingContract = new window.ethers.Contract(addresses.stakingAddress, CONFIG.stakingAbi, signer);
+  }
+
+  async function loadTokenMeta() {
+    const results = await Promise.allSettled([
+      tokenContract.decimals(),
+      tokenContract.symbol(),
+      stakingContract.stakingToken()
+    ]);
+
+    if (results[0].status === "fulfilled") tokenDecimals = results[0].value;
+    if (results[1].status === "fulfilled") tokenSymbol = results[1].value;
+
+    tokenDecimalsEl.textContent = String(tokenDecimals);
+    tokenSymbolEl.textContent = tokenSymbol;
+
+    if (results[2].status === "fulfilled") {
+      const stakingTokenAddress = String(results[2].value || "").toLowerCase();
+      const enteredTokenAddress = tokenAddressEl.value.trim().toLowerCase();
+      if (stakingTokenAddress !== enteredTokenAddress) {
+        setStatus("입력한 토큰 주소가 stakingToken() 주소와 다릅니다. 다시 확인해주세요.", "warn");
+      }
+    }
+  }
+
+  async function refreshData() {
+    if (!stakingContract || !tokenContract || !currentAccount) {
+      setStatus(TEXT.refreshFirst, "warn");
+      return;
+    }
+
+    const addresses = getAddresses();
+    const results = await Promise.all([
+      tokenContract.balanceOf(currentAccount),
+      stakingContract.stakedBalance(currentAccount),
+      stakingContract.pendingReward(currentAccount),
+      stakingContract.unlockTime(currentAccount),
+      tokenContract.allowance(currentAccount, addresses.stakingAddress),
+      stakingContract.totalStaked(),
+      stakingContract.contractTokenBalance(),
+      stakingContract.rewardPool()
+    ]);
+
+    tokenBalanceEl.textContent = formatTokenAmount(results[0]);
+    stakedBalanceEl.textContent = formatTokenAmount(results[1]);
+    pendingRewardEl.textContent = formatTokenAmount(results[2]);
+    unlockTimeEl.textContent = formatUnlockTime(results[3]);
+    allowanceValueEl.textContent = formatTokenAmount(results[4]);
+    totalStakedEl.textContent = formatTokenAmount(results[5]);
+    contractTokenBalanceEl.textContent = formatTokenAmount(results[6]);
+    rewardPoolEl.textContent = formatTokenAmount(results[7]);
+    pushBalancePoint(window.ethers.utils.formatUnits(results[1], tokenDecimals));
+  }
+
+  async function connectWallet() {
+    if (!window.ethers || !window.ethers.providers) {
+      setStatus(TEXT.ethersMissing, "warn");
+      return;
+    }
+
+    if (!hasValidAddresses()) {
+      setStatus(TEXT.invalidAddress, "warn");
+      return;
+    }
+
+    const metaMaskProvider = getMetaMaskProvider();
+    if (!metaMaskProvider) {
+      setStatus(TEXT.metamaskMissing, "warn");
+      return;
+    }
+
+    try {
+      provider = new window.ethers.providers.Web3Provider(metaMaskProvider, "any");
+      await provider.send("eth_requestAccounts", []);
+      await ensureSepolia(metaMaskProvider);
+
+      signer = provider.getSigner();
+      currentAccount = await signer.getAddress();
+      await buildContracts();
+      await loadTokenMeta();
+
+      walletAddressEl.textContent = currentAccount;
+      setButtonsDisabled(false);
+      setStatus(TEXT.connectDone + shortenAddress(currentAccount), "ok");
+      await refreshData();
+    } catch (error) {
+      setButtonsDisabled(true);
+      setStatus(error.data && error.data.message ? error.data.message : error.reason || error.message || TEXT.connectFail, "warn");
+    }
+  }
+
+  async function runApprove() {
+    if (!tokenContract || !stakingContract) return;
+
+    const amountValue = getAmountValue();
+    if (!amountValue) {
+      setStatus(TEXT.approveNeedAmount, "warn");
+      return;
+    }
+
+    try {
+      approveBtn.disabled = true;
+      txHashEl.textContent = TEXT.txSending;
+      const amount = window.ethers.utils.parseUnits(amountValue, tokenDecimals);
+      const tx = await tokenContract.approve(stakingAddressEl.value.trim(), amount);
+      renderTxHash(tx.hash);
+      setStatus(TEXT.approveSent);
+      await tx.wait();
+      setStatus(TEXT.approveDone, "ok");
+      await refreshData();
+    } catch (error) {
+      setStatus(error.data && error.data.message ? error.data.message : error.reason || error.message || TEXT.approveFail, "warn");
+    } finally {
+      approveBtn.disabled = false;
+    }
+  }
+
+  async function runStake() {
+    if (!stakingContract) return;
+
+    const amountValue = getAmountValue();
+    if (!amountValue) {
+      setStatus(TEXT.approveNeedAmount, "warn");
+      return;
+    }
+
+    try {
+      stakeBtn.disabled = true;
+      txHashEl.textContent = TEXT.txSending;
+      const amount = window.ethers.utils.parseUnits(amountValue, tokenDecimals);
+      const tx = await stakingContract.stake(amount);
+      renderTxHash(tx.hash);
+      setStatus(TEXT.stakeSent);
+      await tx.wait();
+      setStatus(TEXT.stakeDone, "ok");
+      await refreshData();
+    } catch (error) {
+      setStatus(error.data && error.data.message ? error.data.message : error.reason || error.message || TEXT.stakeFail, "warn");
+    } finally {
+      stakeBtn.disabled = false;
+    }
+  }
+
+  async function runWithdraw() {
+    if (!stakingContract) return;
+
+    const amountValue = getAmountValue();
+    if (!amountValue) {
+      setStatus(TEXT.approveNeedAmount, "warn");
+      return;
+    }
+
+    try {
+      withdrawBtn.disabled = true;
+      txHashEl.textContent = TEXT.txSending;
+      const amount = window.ethers.utils.parseUnits(amountValue, tokenDecimals);
+      const tx = await stakingContract.withdraw(amount);
+      renderTxHash(tx.hash);
+      setStatus(TEXT.withdrawSent);
+      await tx.wait();
+      setStatus(TEXT.withdrawDone, "ok");
+      await refreshData();
+    } catch (error) {
+      setStatus(error.data && error.data.message ? error.data.message : error.reason || error.message || TEXT.withdrawFail, "warn");
+    } finally {
+      withdrawBtn.disabled = false;
+    }
+  }
+
+  async function runEmergencyWithdraw() {
+    if (!stakingContract) return;
+
+    try {
+      emergencyWithdrawBtn.disabled = true;
+      txHashEl.textContent = TEXT.txSending;
+      const tx = await stakingContract.emergencyWithdraw();
+      renderTxHash(tx.hash);
+      setStatus(TEXT.emergencyWithdrawSent);
+      await tx.wait();
+      setStatus(TEXT.emergencyWithdrawDone, "ok");
+      await refreshData();
+    } catch (error) {
+      setStatus(error.data && error.data.message ? error.data.message : error.reason || error.message || TEXT.emergencyWithdrawFail, "warn");
+    } finally {
+      emergencyWithdrawBtn.disabled = false;
+    }
+  }
+
+  function attachWalletEvents() {
+    const metaMaskProvider = getMetaMaskProvider();
+    if (!metaMaskProvider) return;
+    metaMaskProvider.on("accountsChanged", function () { location.reload(); });
+    metaMaskProvider.on("chainChanged", function () { location.reload(); });
+  }
+
+  function initializePage() {
+    if (!window.ethers || !window.ethers.utils) {
+      setStatus(TEXT.ethersMissing, "warn");
+      return false;
+    }
+
+    tokenAddressEl.value = CONFIG.defaultTokenAddress;
+    stakingAddressEl.value = CONFIG.defaultStakingAddress;
+    return true;
+  }
+
+  connectBtn.addEventListener("click", connectWallet);
+  refreshBtn.addEventListener("click", refreshData);
+  approveBtn.addEventListener("click", runApprove);
+  stakeBtn.addEventListener("click", runStake);
+  withdrawBtn.addEventListener("click", runWithdraw);
+  emergencyWithdrawBtn.addEventListener("click", runEmergencyWithdraw);
+
+  drawChart();
+  attachWalletEvents();
+  initializePage();
+  setTimeout(initializePage, 1000);
+  setTimeout(initializePage, 2500);
+</script>
+</body>
+</html>
