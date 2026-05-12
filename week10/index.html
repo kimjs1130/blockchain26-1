@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KSD Chicken Delivery DApp</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: #211a16;
+      background: #f8f5ef;
+      font-family: Arial, "Noto Sans KR", sans-serif;
+    }
+
+    .app {
+      width: min(980px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: center;
+      padding-bottom: 22px;
+      border-bottom: 2px solid #eadfcd;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0;
+      color: #6f6256;
+      line-height: 1.55;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 16px;
+      color: white;
+      background: #d9480f;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover {
+      background: #b83b0c;
+    }
+
+    button.secondary {
+      color: #d9480f;
+      background: #fff0e8;
+    }
+
+    button.secondary:hover {
+      background: #ffe0d0;
+    }
+
+    input {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid #d8cbb9;
+      border-radius: 8px;
+      padding: 0 12px;
+      background: white;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: #6f6256;
+      font-size: 0.9rem;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 22px;
+      padding-top: 26px;
+      align-items: start;
+    }
+
+    .hero,
+    .panel,
+    .menu {
+      border: 1px solid #eadfcd;
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 16px 34px rgba(74, 55, 35, 0.09);
+    }
+
+    .hero {
+      overflow: hidden;
+    }
+
+    .chicken-art {
+      min-height: 230px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 25% 20%, #fff6d8 0 10%, transparent 11%),
+        radial-gradient(circle at 80% 30%, #ffc078 0 11%, transparent 12%),
+        linear-gradient(135deg, #ffec99, #ffa94d 60%, #f76707);
+      font-size: clamp(5rem, 17vw, 10rem);
+    }
+
+    .hero-body,
+    .panel,
+    .menu {
+      padding: 20px;
+    }
+
+    .price {
+      margin-top: 14px;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #d9480f;
+    }
+
+    .panel {
+      display: grid;
+      gap: 16px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .row > * {
+      flex: 1 1 160px;
+    }
+
+    .balance {
+      display: grid;
+      gap: 8px;
+      padding: 16px;
+      border-radius: 8px;
+      background: #f8f5ef;
+      border: 1px solid #eadfcd;
+    }
+
+    .balance strong {
+      font-size: 1.8rem;
+      color: #2b8a3e;
+      overflow-wrap: anywhere;
+    }
+
+    .menu {
+      margin-top: 22px;
+    }
+
+    .menu h2 {
+      margin: 0 0 14px;
+      font-size: 1.25rem;
+    }
+
+    .menu-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .menu-item {
+      padding: 14px;
+      border: 1px solid #eadfcd;
+      border-radius: 8px;
+      background: #fffaf3;
+    }
+
+    .menu-item strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .status {
+      min-height: 24px;
+      color: #6f6256;
+    }
+
+    .status.ok {
+      color: #2b8a3e;
+    }
+
+    .status.error {
+      color: #c92a2a;
+    }
+
+    .log {
+      min-height: 92px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #211a16;
+      color: #fff3bf;
+      font-family: Consolas, monospace;
+      font-size: 0.86rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 820px) {
+      header,
+      main,
+      .menu-list {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        display: grid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>KSD 치킨 배달</h1>
+        <p>치킨을 주문하면 내 지갑의 KSD가 결제되고, 잔액을 바로 확인할 수 있는 간단한 dApp입니다.</p>
+      </div>
+      <button id="connectButton">지갑 연결</button>
+    </header>
+
+    <main>
+      <section>
+        <article class="hero">
+          <div class="chicken-art">🍗</div>
+          <div class="hero-body">
+            <h2>바삭 후라이드 치킨</h2>
+            <p>결제 버튼을 누르면 ERC-20 approve 후 payment 컨트랙트의 pay 함수가 실행됩니다.</p>
+            <div class="price">10 KSD</div>
+          </div>
+        </article>
+
+        <section class="menu">
+          <h2>주문 흐름</h2>
+          <div class="menu-list">
+            <div class="menu-item">
+              <strong>1. 지갑 연결</strong>
+              MetaMask 계정을 가져옵니다.
+            </div>
+            <div class="menu-item">
+              <strong>2. 결제 승인</strong>
+              치킨값 10 KSD를 approve 합니다.
+            </div>
+            <div class="menu-item">
+              <strong>3. 주문 완료</strong>
+              pay 함수로 결제를 보냅니다.
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="panel">
+        <label>
+          MyStableCoin 주소
+          <input id="tokenAddress" placeholder="0x..." autocomplete="off" />
+        </label>
+
+        <label>
+          StableCoinPayment 주소
+          <input id="paymentAddress" placeholder="0x..." autocomplete="off" />
+        </label>
+
+        <div class="row">
+          <button id="loadButton" class="secondary">컨트랙트 연결</button>
+          <button id="balanceButton" class="secondary">잔액 확인</button>
+        </div>
+
+        <div class="balance">
+          <span>내 KSD 잔액</span>
+          <strong id="balance">-</strong>
+        </div>
+
+        <button id="orderButton">치킨 주문하기</button>
+
+        <div id="status" class="status">지갑을 연결하고 컨트랙트 주소를 입력하세요.</div>
+        <div id="log" class="log">주문 기록이 여기에 표시됩니다.</div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const CHICKEN_PRICE = "10";
+    const GIWA_CHAIN_ID = 91342n;
+    const tokenAbi = [
+      "function decimals() view returns (uint8)",
+      "function symbol() view returns (string)",
+      "function balanceOf(address account) view returns (uint256)",
+      "function approve(address spender, uint256 amount) returns (bool)"
+    ];
+    const paymentAbi = [
+      "function stableCoin() view returns (address)",
+      "function merchant() view returns (address)",
+      "function feeRate() view returns (uint256)",
+      "function pay(uint256 amount)"
+    ];
+
+    let provider;
+    let signer;
+    let account;
+    let token;
+    let payment;
+    let decimals = 6;
+    let symbol = "KSD";
+
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(message, type = "") {
+      $("status").textContent = message;
+      $("status").className = `status ${type}`;
+    }
+
+    function log(message) {
+      const time = new Date().toLocaleTimeString();
+      $("log").textContent = `[${time}] ${message}\n${$("log").textContent}`;
+    }
+
+    function shortAddress(address) {
+      return `${address.slice(0, 6)}...${address.slice(-4)}`;
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        if (location.protocol === "file:") {
+          throw new Error("MetaMask 연결은 file://에서 막힐 수 있습니다. 터미널에서 week10 폴더를 localhost 서버로 열어주세요.");
+        }
+
+        throw new Error("MetaMask가 설치되어 있거나 활성화되어 있는지 확인하세요.");
+      }
+
+      provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = await provider.getSigner();
+      account = await signer.getAddress();
+
+      const network = await provider.getNetwork();
+      if (network.chainId !== GIWA_CHAIN_ID) {
+        setStatus("MetaMask 네트워크를 GIWA Sepolia로 바꿔주세요.", "error");
+      } else {
+        setStatus("지갑 연결 완료", "ok");
+      }
+
+      $("connectButton").textContent = shortAddress(account);
+      log(`지갑 연결: ${account}`);
+    }
+
+    async function loadContracts() {
+      if (!signer) {
+        await connectWallet();
+      }
+
+      const tokenAddress = $("tokenAddress").value.trim();
+      const paymentAddress = $("paymentAddress").value.trim();
+
+      if (!ethers.isAddress(tokenAddress) || !ethers.isAddress(paymentAddress)) {
+        throw new Error("컨트랙트 주소를 올바르게 입력하세요.");
+      }
+
+      token = new ethers.Contract(tokenAddress, tokenAbi, signer);
+      payment = new ethers.Contract(paymentAddress, paymentAbi, signer);
+
+      const paymentTokenAddress = await payment.stableCoin();
+      if (paymentTokenAddress.toLowerCase() !== tokenAddress.toLowerCase()) {
+        throw new Error("Payment 컨트랙트가 바라보는 토큰 주소가 MyStableCoin 주소와 다릅니다. StableCoinPayment를 MyStableCoin 주소로 다시 배포하세요.");
+      }
+
+      decimals = Number(await token.decimals());
+      symbol = await token.symbol();
+      const merchant = await payment.merchant();
+      const feeRate = await payment.feeRate();
+
+      setStatus("컨트랙트 연결 완료", "ok");
+      log(`${symbol} 토큰과 결제 컨트랙트 연결 완료`);
+      log(`가게 주소: ${shortAddress(merchant)}, 수수료율: ${feeRate} / 10000`);
+      await refreshBalance();
+    }
+
+    async function refreshBalance() {
+      if (!token || !account) {
+        throw new Error("지갑과 컨트랙트를 먼저 연결하세요.");
+      }
+
+      const balance = await token.balanceOf(account);
+      $("balance").textContent = `${ethers.formatUnits(balance, decimals)} ${symbol}`;
+      log("잔액 확인 완료");
+    }
+
+    async function orderChicken() {
+      if (!token || !payment) {
+        throw new Error("컨트랙트를 먼저 연결하세요.");
+      }
+
+      const paymentAddress = await payment.getAddress();
+      const paymentTokenAddress = await payment.stableCoin();
+      const tokenAddress = await token.getAddress();
+      if (paymentTokenAddress.toLowerCase() !== tokenAddress.toLowerCase()) {
+        throw new Error("결제 컨트랙트의 토큰 주소가 현재 토큰 주소와 다릅니다.");
+      }
+
+      const amount = ethers.parseUnits(CHICKEN_PRICE, decimals);
+
+      setStatus("1단계: 치킨값 approve 중...");
+      const approveTx = await token.approve(paymentAddress, amount);
+      log(`approve 전송: ${approveTx.hash}`);
+      await approveTx.wait();
+
+      setStatus("2단계: 치킨 주문 결제 중...");
+      const payTx = await payment.pay(amount);
+      log(`pay 전송: ${payTx.hash}`);
+      await payTx.wait();
+
+      setStatus("치킨 주문 완료", "ok");
+      log(`바삭 후라이드 치킨 주문 완료: ${CHICKEN_PRICE} ${symbol}`);
+      await refreshBalance();
+    }
+
+    async function run(task) {
+      try {
+        await task();
+      } catch (error) {
+        const message = error.shortMessage || error.reason || error.message || "오류가 발생했습니다.";
+        setStatus(message, "error");
+        log(`오류: ${message}`);
+      }
+    }
+
+    $("connectButton").addEventListener("click", () => run(connectWallet));
+    $("loadButton").addEventListener("click", () => run(loadContracts));
+    $("balanceButton").addEventListener("click", () => run(refreshBalance));
+    $("orderButton").addEventListener("click", () => run(orderChicken));
+  </script>
+</body>
+</html>
